@@ -4,6 +4,7 @@ from discord.ext import commands
 import asyncio
 import logging
 
+import IncidentWriter
 import secrets
 
 ## Have to run this
@@ -17,9 +18,10 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
+description = """You better work"""
 ## Init the bot
 Client = discord.Client()
-client = commands.Bot(command_prefix = "?")
+client = commands.Bot(command_prefix = "?", description=description)
 
 """
 
@@ -46,6 +48,25 @@ async def on_ready():
     
     
 HELP_MSG = """This is where help stuff would be, if there was any written"""
+INCIDENT_MSG = """Choose a flag:
+-e [num]             edit incident [num]
+-l                   lists current incidents
+-n [num] <>Data<>    create a new incident"""
+
+## Commands
+HELP = '?HELP'
+INC_EDIT = '?INCIDENT -e '
+
+
+
+incident_list = {}
+
+
+
+@client.command()
+async def add(ctx,arg):
+    print("HERE:")
+    await ctx.send(arg)
 
 # Reactions to messages
 @client.event
@@ -62,6 +83,19 @@ async def on_message(message):
             await client.send_message(message.channel, HELP_MSG)
         elif (len(args) > 1):
             await client.send_message(message.channel, "Not implemented yet")
+            
+    if msg.startswith(INC_EDIT):
+        last_ind = msg.index(" ",len(INC_EDIT))
+        inc_num = int(msg[len(INC_EDIT):msg.index(" ",len(INC_EDIT))])
+        if inc_num < 1:
+            await client.send_message(message.channel, "Incident number must be one or greater.")
+        if inc_num in incident_list.keys():
+            data = msg[last_ind+1:]
+            print(inc_num, data)
+        else:
+            await client.send_message(message.channel, "Not a valid incident.")
+        
+        
     
     
     
