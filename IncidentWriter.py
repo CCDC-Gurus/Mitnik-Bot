@@ -1,5 +1,44 @@
 import time
 
+class Incident():
+    
+    def __init__(self,incNum):
+        
+        self.incNum = incNum
+        self.imgs = ""
+        self.attInfo = ""
+        self.tar = ""
+        self.vuln = ""
+        self.response = ""
+        self.result = ""
+        
+        
+    def set_num(self, num):
+        self.incNum = num
+        
+    def set_imgs(self, imgs):
+        self.imgs = imgs
+        
+    def set_attacker(self, attacker):
+        self.attInfo = attacker
+        
+    def set_target(self, target):
+        self.tar = target
+        
+    def set_vulnerability(self, vuln):
+        self.vuln = vuln
+        
+    def set_response(self, resp):
+        self.response = resp
+        
+    def set_result(self, res):
+        self.result = res
+    
+    
+
+
+
+
 
 class IncidentWriter():
         
