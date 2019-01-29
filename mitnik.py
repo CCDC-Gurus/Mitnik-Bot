@@ -40,12 +40,12 @@ description = """You better work"""
 #Client = discord.Client()
 client = commands.Bot(command_prefix = "?", description=description)
 
+
 def tool_countIncidents():
-    return len([name for name in os.listdir('./Incidents') if os.path.isfile(name)])
-
-
-
-
+    count = 0
+    for name in os.listdir('./inc_raw'):
+        count += 1
+    return count
 
 # Runs on turn on
 @client.event
@@ -64,12 +64,6 @@ INCIDENT_MSG = """Choose a flag:
 ## Commands
 HELP = '?HELP'
 INC_EDIT = '?INCIDENT -e '
-
-
-
-incident_list = []
-tot_incidents = tool_countIncidents()
-
 
 @client.command()
 async def add(ctx,arg):
@@ -113,8 +107,10 @@ async def on_message(message):
                 if (args[1] == '-E'):
                     # Check this is a valid edit
                     inc_2_edit = int(args[2])
-                    if (args[inc_2_edit] > 0 and args[inc_2_edit] <= tot_incidents):
-                        MENU = """Which would you like to edit:
+                    if (inc_2_edit > 0 and inc_2_edit <= tool_countIncidents()):
+                        
+                        # Choose parts to edit
+                        MENU = """Which would you like to edit (seperate multiple choices with commas):
                         1) Image Paths
                         2) Attacker Info
                         3) Target Info
@@ -122,83 +118,146 @@ async def on_message(message):
                         5) Response Taken
                         6) Results\n"""
                         
-                        # Send message
-                        await client.send_message(message.channel, MENU)
                         
+                        ready = False
+                        while not ready:
+                            # Send message
+                            await client.send_message(message.channel, MENU)
+                            # Receive message
+                            input = await client.wait_for_message(author=message.author)
+                            
+                            ready = True
+                            input = input.content.split(',')
+                            if len(input) < 1:
+                                ready = False
+                            else:
+                                for i in range(len(input)):
+                                    input[i] = int(input[i])
+                                    if (input[i] < 1 or input[i] > 6):
+                                        await client.send_message(message.channel, "Invalid option: " + str(input[i]) + ", choose again")
+                                        ready = False
+                                             
                         
-                        
-                        
-                        
+                        incident = IncidentWriter.Incident(inc_2_edit)
+                        incident.fromexisting(inc_2_edit)
+                        # Edit each part listed
+                        for attr in input:
+                            
+                            if attr == 1:
+                                await client.send_message(message.channel, 'Update path to images:')
+                                # Receive input
+                                input = await client.wait_for_message(author=message.author)
+                                # Set images
+                                incident.set_imgs("test")
+                            elif attr == 2:
+                                # Send message
+                                await client.send_message(message.channel,'Update Attacker info:')
+                                # Receive input
+                                input = await client.wait_for_message(author=message.author)
+                                # Set attacker
+                                incident.set_attacker(input.content)
+                            elif attr == 3:
+                                # Send message
+                                await client.send_message(message.channel,'Update Target info:')
+                                # Receive input
+                                input = await client.wait_for_message(author=message.author)
+                                # Set attacker
+                                incident.set_target(input.content)
+                            elif attr == 4:
+                                # Send message
+                                await client.send_message(message.channel,'Update what was Vulnerable:')
+                                # Receive input
+                                input = await client.wait_for_message(author=message.author)
+                                # Set vulnerability
+                                incident.set_vulnerability(input.content)
+                            elif attr == 5:
+                                # Send message
+                                await client.send_message(message.channel,'Update Response taken:')
+                                # Receive input
+                                input = await client.wait_for_message(author=message.author)
+                                # Set response
+                                incident.set_response(input.content)
+                            elif attr == 6:
+                                # Send message
+                                await client.send_message(message.channel,'Update Result of Repsonse:')
+                                # Receive input
+                                input = await client.wait_for_message(author=message.author)
+                                # Set result
+                                incident.set_result(input.content)
+                                
+                        IncWriter = IncidentWriter.IncidentWriter(incident)
+                    else:
+                       print("Invalied incident target")
+           
                 else:
                     # Send error
-                    await client.send_message(message.channel, 'Invalid flag')
-                        
-                        
-                        
-                        
-                
+                    await client.send_message(message.channel, 'Invalid use. (Maybe choose an incident to edit.)')
+                    
+            ## THERE IS exactly 2 ARGUMENTS    
             elif (len(args) == 2):  
                 ## NEW MODE
                 if (args[1] == '-N'):
                     # Create new incident
-                    incident_list.append(IncidentWriter.Incident(tot_incidents+1))
+                    incident = IncidentWriter.Incident(tool_countIncidents()+1)
 
                     # Send message
-                    await client.send_message(message.channel, 'New Incident #' + str(tot_incidents+1))
+                    await client.send_message(message.channel, 'New Incident #' + str(incident.get_num()))
                     await client.send_message(message.channel, 'Enter path to images:')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set images
-                    incident_list[-1].set_imgs("test")
+                    incident.set_imgs("test")
                     
                     # Send message
                     await client.send_message(message.channel,'Enter Attacker info:')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set attacker
-                    incident_list[-1].set_attacker(input)
+                    incident.set_attacker(input.content)
                     
                     # Send message
                     await client.send_message(message.channel,'Enter Target info:')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set attacker
-                    incident_list[-1].set_target(input)
+                    incident.set_target(input.content)
                     
                     # Send message
                     await client.send_message(message.channel,'Enter what was Vulnerable:')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set vulnerability
-                    incident_list[-1].set_vulnerability(input)
+                    incident.set_vulnerability(input.content)
                     
                     # Send message
                     await client.send_message(message.channel,'Enter Response taken:')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set response
-                    incident_list[-1].set_response(input)
+                    incident.set_response(input.content)
                     
                     # Send message
                     await client.send_message(message.channel,'Enter Result of Repsonse:')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set result
-                    incident_list[-1].set_result(input)
+                    incident.set_result(input.content)
                     
-                    
-                    
-                    
-                    
-                    
-                    
+                    IncWriter = IncidentWriter.IncidentWriter(incident) # Should write to save and tex file
+                # LIST MODE
+                elif (args[1] == '-L'):
+                    output = ""
+                    if tool_countIncidents() > 0:
+                        for fin in os.listdir("./inc_raw/"):
+                            with open(os.path.join("./inc_raw/",fin),"r") as file:
+                                for line in file:
+                                    output += line + "\n"
+                            output += "\n"
+                    else:
+                        output = "No valid incidents yet."
+                    await client.send_message(message.channel,output)    
                     
                 
-                
-
-
-
-
                 else:
                     # Send error
                     await client.send_message(message.channel, 'Invalid flag')
@@ -207,10 +266,8 @@ async def on_message(message):
             
             
             
-            elif (args[1] == '-n'):    
-                pass
-            elif (args[1] == '-l'):    
-                pass
+            else:
+                print("Too many or too few arguments")
     
             
     #if msg.startswith(INC_EDIT):

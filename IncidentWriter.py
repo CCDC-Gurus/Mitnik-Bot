@@ -1,5 +1,7 @@
 import time
+import os
 
+        
 class Incident():
     
     def __init__(self,incNum):
@@ -12,6 +14,20 @@ class Incident():
         self.response = ""
         self.result = ""
         
+    def fromexisting(self, num):
+        
+        try:
+            with open(os.oath.join("./inc_raw/",str(num)+".txt"),"r") as file:
+                self.incNum = num
+                self.imgs = file[1]
+                self.attInfo = file[2]
+                self.tar = file[3]
+                self.vuln = file[4]
+                self.response = file[5]
+                self.result = file[6]
+                
+        except Exception as e:
+            print(e)
         
     def set_num(self, num):
         self.incNum = num
@@ -34,7 +50,8 @@ class Incident():
     def set_result(self, res):
         self.result = res
     
-    
+    def get_num(self):
+        return self.incNum
 
 
 
@@ -42,77 +59,36 @@ class Incident():
 
 class IncidentWriter():
         
-    def __init__(self,message,incNum):
-        #self.TAG_INCNUM = "<incNum>"
-        self.TAG_DATE = "<date>"
-        self.TAG_IMGS = "<images>"
-        self.TAG_ATTINFO = "<attInfo>"
-        self.TAG_TAR = "<tar>"
-        self.TAG_VULN = "<vuln>"
-        self.TAG_RESPONSE = "<response>"
-        self.TAG_RESULT = "<result>"
+    ## Creates incident writer object from a given incident
+    def __init__(self,incident):
+        self.incident = incident
         
-        self.incNum = incNum
-        self.imgs = ""
-        self.attInfo = ""
-        self.tar = ""
-        self.vuln = ""
-        self.response = ""
-        self.result = ""
-            
+        # Format from incident
+        self.incNum = incident.incNum
+        self.imgs = self.secImages(incident.imgs)
+        self.attInfo = self.secAttackInfo(incident.attInfo)
+        
+        # Im sorry...
+        self.tar = incident.tar
+        self.setPreamble()
+        self.tar = self.secTarget(incident.tar)
+        
+        self.vuln = self.secVulnerability(incident.vuln)
+        self.response = self.secResponse(incident.response)
+        self.result = self.secResult(incident.result)
+        
+        
         # Date/Time of the Incident
-        if self.TAG_DATE in message:
-            data = self.msgParse(message, self.TAG_DATE)
-            self.date = data
-        else:
-            self.date = self.setDate() # If date wasn't given, generate it
+        #self.date = self.setDate() # If date wasn't given, generate it
             
-        # Comma Seperated list of images to be included
-        if self.TAG_IMGS in message:
-            data = self.msgParse(message, self.TAG_IMGS)
-            self.imgs = self.secImages()
-            
-        # Attacker info
-        if self.TAG_ATTINFO in message:
-            data = self.msgParse(message, self.TAG_ATTINFO)
-            self.attInfo = self.secAttackInfo(data)
-            
-        # Target of attacker
-        if self.TAG_TAR in message:
-            data = self.msgParse(message, self.TAG_TAR) # parse the data
-            self.tar = self.secTarget(data) # format the data
-
-            
-        # What was the vulnerability
-        if self.TAG_VULN in message:
-            data = self.msgParse(message, self.TAG_VULN)
-            self.VULN = self.secVulnerability(data)
-            
-            
-        # Our response
-        if self.TAG_RESPONSE in message:
-            data = self.msgParse(message, self.TAG_RESPONSE)
-            self.repsonse = self.secResponse(data)
-            
-            
-        # Result of attack and actions taken
-        if self.TAG_RESULT in message:
-            data = self.msgParse(message, self.TAG_RESULT)
-            self.result = self.secResult(data)
-            
-        
-    
-        #self.incNum = incNum
-        #self.date = 20
-        #self.imgs = imgs
-        #self.attInfo = attInfo
-        #self.tar = tar
-        #self.vuln = vuln
-        #self.response = response
-        #self.result = result
         self.setPreamble()
         self.setEndamble()
         
+        self.writeToTexFile()
+        self.writeToSaveFile()
+        
+
+    
     
     # Start of the LaTeX document
     def setPreamble(self):
@@ -137,7 +113,7 @@ class IncidentWriter():
 		\\textsc{\\large %s \\\\
 			Found: %s \\\\}
 	\\end{flushright}
-\\end{titlepage}""" % (str(self.incNum),str(self.tar),str(self.date) )
+\\end{titlepage}""" % (str(self.incNum),str(self.tar),str("01/24/19") )
 
 
     def setEndamble(self):
@@ -195,9 +171,10 @@ class IncidentWriter():
         return combo
         
     # Write out to a tex file
-    def writeToFile(self,fout):
+    def writeToTexFile(self):
     
         try:
+            fout = os.path.join("./inc_tex/",str(self.incNum)+".tex")
             with open(fout,"w") as file:
                 file.write(self.PREAMBLE)
                 
@@ -215,8 +192,24 @@ class IncidentWriter():
                     file.write(self.result)
                     
                 file.write(self.ENDAMBLE)
-        except:
-            print("File opening failed")
+        except Exception as e:
+            print("Tex file opening failed")
+            print(e)
+            
+    def writeToSaveFile(self):
+        try:
+            fout = os.path.join("./inc_raw/",str(self.incident.incNum)+".txt")
+            with open(fout,"w") as file:
+                file.write(str(self.incident.incNum)+"\n")
+                file.write(self.incident.imgs+"\n")
+                file.write(self.incident.attInfo+"\n")
+                file.write(self.incident.tar+"\n")
+                file.write(self.incident.vuln+"\n")
+                file.write(self.incident.response+"\n")
+                file.write(self.incident.result)
+        except Exception as e:
+            print("Save file opening failed")
+            print(e)
             
 if __name__ == "__main__":
     test = IncidentWriter("<date>Novemeber 11, 2018</date><attInfo>The attacker came from california</attInfo>",1)
