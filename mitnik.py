@@ -1,3 +1,15 @@
+## Mitnik - CCDC Discord Helper
+## A bot to provide help with different CCDC functions such as
+## incident reports, inject monitoring, and password generation.
+## Gavin Lewis - 2018
+
+"""
+
+    Imports
+
+    
+"""
+
 import discord
 from discord.ext.commands import Bot
 from discord.ext import commands
@@ -6,6 +18,7 @@ import logging
 import os
 
 import IncidentWriter
+import PasswdGen
 import secrets
 
 ## Have to run this
@@ -17,7 +30,7 @@ import secrets
 This bot will have a few functions
 
     - Timer for injects
-        a) Display description
+        a) Display description          
         b) Display who is on it, so assign people
         c) Timer reminders
     - Show who is in charge of which box
@@ -28,7 +41,10 @@ This bot will have a few functions
 
 """
 
-## Logging functions
+"""
+    Logging functions
+"""
+
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -36,10 +52,13 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 
 description = """You better work"""
+
 ## Init the bot
-#Client = discord.Client()
 client = commands.Bot(command_prefix = "?", description=description)
 
+"""
+    Tools
+"""
 
 def tool_countIncidents():
     count = 0
@@ -54,13 +73,6 @@ async def on_ready():
     
     print("Current incidents: " + str(tool_countIncidents()))
     
-    
-HELP_MSG = """This is where help stuff would be, if there was any written"""
-INCIDENT_MSG = """Choose a flag:
--e [num]             edit incident [num]
--l                   lists current incidents
--n [num] <>Data<>    create a new incident"""
-
 ## Commands
 HELP = '?HELP'
 INC_EDIT = '?INCIDENT -e '
@@ -73,37 +85,132 @@ async def add(ctx,arg):
 # Reactions to messages
 @client.event
 async def on_message(message):
+    HELP_MSG = """Welcome, I am Mitnik, here to help you.
+    (Use the flag -H on any command to find help)
+    
+?HELP - Bring up this message
+?INCIDENT - Create/Edit/List Incidents
+?GENPASS - Generate a password"""
+    
+    INCIDENT_MSG = """Choose a flag:
+-e [num]             edit incident [num]
+-l [num]             lists current incidents (or a single incident)
+-n                   create a new incident"""
 
     auth = str(message.author)
+    print(auth + ": " + message.content) # Print to console
     msg = str(message.content.upper())
         
-    print(auth + ": " + msg)
-    
-    #if msg.startswith('?HELP'):
-    #    args = message.content.split(" ")
-    #    if (len(args) == 1):
-    #        await client.send_message(message.channel, HELP_MSG)
-    #    elif (len(args) > 1):
-    #        await client.send   _message(message.channel, "Not implemented yet")
-            
+    ## Command switch
     if msg.startswith('?'):
         args = msg.split(" ")
-        
+
+################################################################################################
         if args[0] == '?HELP':
+            
             if (len(args) == 1):
                 await client.send_message(message.channel, HELP_MSG)
             elif (len(args) > 1):
                 await client.send_message(message.channel, "Not implemented yet")
-        
+                
+################################################################################################        
         if args[0] == '?INCIDENT':
+
             ## There is only one argument
             if (len(args) == 1):
-                await client.send_message(message.channel, "Here will be a list of the flags.")
-               
+                await client.send_message(message.channel, INCIDENT_MSG)
+                        
+            ## THERE IS exactly 2 ARGUMENTS    
+            elif (len(args) == 2): 
+            
+                if (args[1] == '-H'):
+                    await client.send_message(message.channel, INCIDENT_MSG)
+                    
+                ## 2ARG - NEW MODE
+                elif (args[1] == '-N'):
+                    # Create new incident
+                    incident = IncidentWriter.Incident(tool_countIncidents()+1)
+        
+                    # Send message
+                    await client.send_message(message.channel, 'New Incident #' + str(incident.get_num()))
+                    await client.send_message(message.channel, 'Enter path to images:')
+                    # Receive input
+                    input = await client.wait_for_message(author=message.author)
+                    # Set images
+                    incident.set_imgs("test")
+                    
+                    # Send message
+                    await client.send_message(message.channel,'Enter Attacker info:')
+                    # Receive input
+                    input = await client.wait_for_message(author=message.author)
+                    # Set attacker
+                    incident.set_attacker(input.content)
+                    
+                    # Send message
+                    await client.send_message(message.channel,'Enter Target info:')
+                    # Receive input
+                    input = await client.wait_for_message(author=message.author)
+                    # Set attacker
+                    incident.set_target(input.content)
+                    
+                    # Send message
+                    await client.send_message(message.channel,'Enter what was Vulnerable:')
+                    # Receive input
+                    input = await client.wait_for_message(author=message.author)
+                    # Set vulnerability
+                    incident.set_vulnerability(input.content)
+                    
+                    # Send message
+                    await client.send_message(message.channel,'Enter Response taken:')
+                    # Receive input
+                    input = await client.wait_for_message(author=message.author)
+                    # Set response
+                    incident.set_response(input.content)
+                    
+                    # Send message
+                    await client.send_message(message.channel,'Enter Result of Repsonse:')
+                    # Receive input
+                    input = await client.wait_for_message(author=message.author)
+                    # Set result
+                    incident.set_result(input.content)
+                    
+                    incident.saveall()
+                    #IncWriter = IncidentWriter.IncidentWriter(incident) # Should write to save and tex file
+                    
+                # 2ARG - LIST MODE
+                elif (args[1] == '-L'):
+                    output = ""
+                    cnt = 1
+                    if tool_countIncidents() > 0:
+                        for fin in os.listdir("./inc_raw/"):  # For each file
+
+                            output += "Incident num " + str(cnt) + ":\n"
+                            with open(os.path.join("./inc_raw/",fin),"r") as file:
+                                i = 1
+                                for line in file:
+                                    output += str(i) + "> " + str(line) + "\n"
+                                    i += 1
+                            output += "\n"
+                            cnt += 1
+                    else:
+                        output = "No valid incidents yet."
+
+                    await client.send_message(message.channel,output)    
+                    
+                # 2ARG - INVALID FLAG
+                else:
+                    # Send error
+                    if (args[1] == '-E'):
+                        await client.send_message(message.channel, 'Invalid incident number')
+                    else:
+                        await client.send_message(message.channel, 'Invalid flag')
+                        func_help(message,client)
+        
+            
             ## There is exactly 3 arguments
             elif (len(args) == 3):
                 
-                ## EDIT MODE
+                ## 3ARG - EDIT MODE
                 if (args[1] == '-E'):
                     # Check this is a valid edit
                     inc_2_edit = int(args[2])
@@ -118,7 +225,7 @@ async def on_message(message):
                         5) Response Taken
                         6) Results\n"""
                         
-                        
+                        # Obtain a valid option to choose
                         ready = False
                         while not ready:
                             # Send message
@@ -128,18 +235,19 @@ async def on_message(message):
                             
                             ready = True
                             input = input.content.split(',')
-                            if len(input) < 1:
-                                ready = False
+                            if len(input) < 1: # If blank
+                                ready = False # Get new data
                             else:
                                 for i in range(len(input)):
                                     input[i] = int(input[i])
-                                    if (input[i] < 1 or input[i] > 6):
+                                    if (input[i] < 1 or input[i] > 6): # Make sure valid
                                         await client.send_message(message.channel, "Invalid option: " + str(input[i]) + ", choose again")
                                         ready = False
-                                             
-                        
+                                            
+                        # Pull up the incident
                         incident = IncidentWriter.Incident(inc_2_edit)
                         incident.fromexisting(inc_2_edit)
+                        
                         # Edit each part listed
                         for attr in input:
                             
@@ -185,101 +293,55 @@ async def on_message(message):
                                 # Set result
                                 incident.set_result(input.content)
                                 
-                        IncWriter = IncidentWriter.IncidentWriter(incident)
-                    else:
-                       print("Invalied incident target")
-           
-                else:
-                    # Send error
-                    await client.send_message(message.channel, 'Invalid use. (Maybe choose an incident to edit.)')
-                    
-            ## THERE IS exactly 2 ARGUMENTS    
-            elif (len(args) == 2):  
-                ## NEW MODE
-                if (args[1] == '-N'):
-                    # Create new incident
-                    incident = IncidentWriter.Incident(tool_countIncidents()+1)
+                        incident.saveall()
 
-                    # Send message
-                    await client.send_message(message.channel, 'New Incident #' + str(incident.get_num()))
-                    await client.send_message(message.channel, 'Enter path to images:')
-                    # Receive input
-                    input = await client.wait_for_message(author=message.author)
-                    # Set images
-                    incident.set_imgs("test")
-                    
-                    # Send message
-                    await client.send_message(message.channel,'Enter Attacker info:')
-                    # Receive input
-                    input = await client.wait_for_message(author=message.author)
-                    # Set attacker
-                    incident.set_attacker(input.content)
-                    
-                    # Send message
-                    await client.send_message(message.channel,'Enter Target info:')
-                    # Receive input
-                    input = await client.wait_for_message(author=message.author)
-                    # Set attacker
-                    incident.set_target(input.content)
-                    
-                    # Send message
-                    await client.send_message(message.channel,'Enter what was Vulnerable:')
-                    # Receive input
-                    input = await client.wait_for_message(author=message.author)
-                    # Set vulnerability
-                    incident.set_vulnerability(input.content)
-                    
-                    # Send message
-                    await client.send_message(message.channel,'Enter Response taken:')
-                    # Receive input
-                    input = await client.wait_for_message(author=message.author)
-                    # Set response
-                    incident.set_response(input.content)
-                    
-                    # Send message
-                    await client.send_message(message.channel,'Enter Result of Repsonse:')
-                    # Receive input
-                    input = await client.wait_for_message(author=message.author)
-                    # Set result
-                    incident.set_result(input.content)
-                    
-                    IncWriter = IncidentWriter.IncidentWriter(incident) # Should write to save and tex file
-                # LIST MODE
+                    else:
+                        print("Invalied incident target")
+                
+                # 3ARG - LIST MODE
                 elif (args[1] == '-L'):
                     output = ""
-                    if tool_countIncidents() > 0:
-                        for fin in os.listdir("./inc_raw/"):
-                            with open(os.path.join("./inc_raw/",fin),"r") as file:
-                                for line in file:
-                                    output += line + "\n"
+                    TOT_INC = tool_countIncidents()
+                    inc2edit = int(args[2])
+                    
+                    # If valid
+                    if inc2edit > 0 and inc2edit <= TOT_INC:
+                        output += "Incident num " + str(inc2edit) + ":\n"
+                        with open(os.path.join("./inc_raw/",str(inc2edit)+".txt"),"r") as file:
+                            i = 1
+                            for line in file:
+                                output += str(i) + "> " + str(line) + "\n"
+                                i += 1
                             output += "\n"
                     else:
-                        output = "No valid incidents yet."
-                    await client.send_message(message.channel,output)    
-                    
-                
+                        output = "Not a valid incident to edit."
+
+                    await client.send_message(message.channel,output)
                 else:
                     # Send error
-                    await client.send_message(message.channel, 'Invalid flag')
+                    await client.send_message(message.channel, 'Invalid incident chosen.')
+            
+################################################################################################
+        if args[0] == '?GENPASS':
+            
+            if (len(args) == 1):
+                passwd = PasswdGen.gen_password()
+                await client.send_message(message.channel, "New password: " + passwd)
+            
+            elif (len(args) == 2):
+                if (int(args[1]) > 6):
+                    await client.send_message(message.channel, "That might be too long, keep it 5 or less")
+                elif (int(args[1]) > 0):
+                    passwd = PasswdGen.gen_password(int(args[1]))
+                    await client.send_message(message.channel, "New password: " + passwd)
+                elif (args[1] == "-H"):
+                    await client.send_message(message.channel, "?GENPASS [0 < num <= 5]\n  Will generate a password of the length provided.")
+                else:
+                    await client.send_message(message.channel, "Invalid use of this command.")
+                
+
             
             
-            
-            
-            
-            else:
-                print("Too many or too few arguments")
-    
-            
-    #if msg.startswith(INC_EDIT):
-    #    last_ind = msg.index(" ",len(INC_EDIT))
-    #    inc_num = int(msg[len(INC_EDIT):msg.index(" ",len(INC_EDIT))])
-    #    if inc_num < 1:
-    #        await client.send_message(message.channel, "Incident number must be one or greater.")
-    #    if inc_num in incident_list.keys():
-    #        data = msg[last_ind+1:]
-    #        print(inc_num, data)
-    #    else:
-    #        await client.send_message(message.channel, "Not a valid incident.")
         
         
     
