@@ -16,6 +16,9 @@ from discord.ext import commands
 import asyncio
 import logging
 import os
+import urllib.request
+import requests
+import shutil
 
 import IncidentWriter
 import PasswdGen
@@ -33,11 +36,9 @@ This bot will have a few functions
         a) Display description          
         b) Display who is on it, so assign people
         c) Timer reminders
-    - Show who is in charge of which box
-        a) Return who is on it
-        b) Return IP, function, other relevant data
-    - Return important bits of code?
-        a) Maybe if a github is setup this will return stuff and be legal
+    - Incident Creator
+        a) Manage and create incident reports
+    - Password generator
 
 """
 
@@ -52,6 +53,15 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 
 description = """You better work"""
+
+## Make sure directories are there
+if not(os.path.isdir("images")):
+    os.mkdir("images")
+if not(os.path.isdir("inc_tex")):
+    os.mkdir("inc_tex")
+if not(os.path.isdir("inc_raw")):
+    os.mkdir("inc_raw")
+
 
 ## Init the bot
 client = commands.Bot(command_prefix = "?", description=description)
@@ -97,9 +107,25 @@ async def on_message(message):
 -l [num]             lists current incidents (or a single incident)
 -n                   create a new incident"""
 
+    INCIDENT_TAGS = ["", "Img Path", "Attacker", "Target", "Vulnerability", "Response Taken", "Result"]
+
+    ## Debug stuff
     auth = str(message.author)
     print(auth + ": " + message.content) # Print to console
     msg = str(message.content.upper())
+    
+    ## TEST ZONE
+    #print(len(message.embeds))
+    #print(message.attachments[0])
+    #if (len(message.embeds) > 0):
+    #    print(message.embeds[0].title)
+    #    print(message.embeds[0].type)
+    #    print(message.embeds[0].url)
+    #    print(message.embeds[0].image)
+    
+    
+    
+    
         
     ## Command switch
     if msg.startswith('?'):
@@ -130,12 +156,28 @@ async def on_message(message):
                 elif (args[1] == '-N'):
                     # Create new incident
                     incident = IncidentWriter.Incident(tool_countIncidents()+1)
-        
+                    
                     # Send message
                     await client.send_message(message.channel, 'New Incident #' + str(incident.get_num()))
-                    await client.send_message(message.channel, 'Enter path to images:')
+                    await client.send_message(message.channel, 'Upload all relevant images:\n(Type "done" when finished.)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
+                    num_imgs = 1
+                    while (len(input.attachments) > 0):
+                        print(input.attachments[0]["url"])
+                        #urllib.request.urlretrieve(input.attachments[0]["url"], "inc_" + str(tool_countIncidents()+1) + "_img_" + str(num_imgs) + ".jpg")
+                        r = requests.get(input.attachments[0]["url"], stream=True, headers={'User-agent': 'Mozilla/5.0'})
+                        if r.status_code == 200:
+                            with open("images/inc_" + str(tool_countIncidents()+1) + "_img_" + str(num_imgs) + ".jpg", 'wb') as f:
+                                r.raw.decode_content = True
+                                shutil.copyfileobj(r.raw, f)
+                        else:
+                            print("Failed to grab image")
+                        
+                        
+                        
+                        input = await client.wait_for_message(author=message.author)
+                        num_imgs += 1
                     # Set images
                     incident.set_imgs("test")
                     
