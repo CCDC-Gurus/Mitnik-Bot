@@ -1,4 +1,4 @@
-import time
+
 import os
 
         
@@ -15,16 +15,15 @@ class Incident():
         self.result = ""
         
     def fromexisting(self, num):
-        
         try:
-            with open(os.oath.join("./inc_raw/",str(num)+".txt"),"r") as file:
-                self.incNum = num
-                self.imgs = file[1]
-                self.attInfo = file[2]
-                self.tar = file[3]
-                self.vuln = file[4]
-                self.response = file[5]
-                self.result = file[6]
+            with open(os.path.join("./inc_raw/",str(num).strip()+".txt"),"r") as file:
+                self.incNum = file.readline().strip()
+                self.imgs = file.readline().strip()
+                self.attInfo = file.readline().strip()
+                self.tar = file.readline().strip()
+                self.vuln = file.readline().strip()
+                self.response = file.readline().strip()
+                self.result = file.readline().strip()
                 
         except Exception as e:
             print(e)
@@ -52,45 +51,54 @@ class Incident():
     
     def get_num(self):
         return self.incNum
-
-
-
-
-
-class IncidentWriter():
         
-    ## Creates incident writer object from a given incident
-    def __init__(self,incident):
-        self.incident = incident
+    def saveall(self):
+        self.write_to_tex()
+        self.write_to_raw()
         
-        # Format from incident
-        self.incNum = incident.incNum
-        self.imgs = self.secImages(incident.imgs)
-        self.attInfo = self.secAttackInfo(incident.attInfo)
-        
-        # Im sorry...
-        self.tar = incident.tar
-        self.setPreamble()
-        self.tar = self.secTarget(incident.tar)
-        
-        self.vuln = self.secVulnerability(incident.vuln)
-        self.response = self.secResponse(incident.response)
-        self.result = self.secResult(incident.result)
-        
-        
-        # Date/Time of the Incident
-        #self.date = self.setDate() # If date wasn't given, generate it
-            
+    def write_to_tex(self):
         self.setPreamble()
         self.setEndamble()
         
-        self.writeToTexFile()
-        self.writeToSaveFile()
+        try:
+            fout = os.path.join("./inc_tex/",str(self.incNum)+".tex")
+            with open(fout,"w") as file:
+                file.write(self.PREAMBLE)
+                
+                if (self.imgs != ""):
+                    file.write(self.secImages(self.imgs))
+                if (self.attInfo != ""):
+                    file.write(self.secAttackInfo(self.attInfo))
+                if (self.tar != ""):
+                    file.write(self.secTarget(self.tar))
+                if (self.vuln != ""):
+                    file.write(self.secVulnerability(self.vuln))
+                if (self.response != ""):
+                    file.write(self.secResponse(self.response))
+                if (self.result != ""):
+                    file.write(self.secResult(self.result))
+                    
+                file.write(self.ENDAMBLE)
+        except Exception as e:
+            print("Tex file opening failed")
+            print(e)
+            
+    def write_to_raw(self):
+        try:
+            fout = os.path.join("./inc_raw/",str(self.incNum)+".txt")
+            with open(fout,"w") as file:
+                file.write(str(self.incNum)+"\n")
+                file.write(self.imgs+"\n")
+                file.write(self.attInfo+"\n")
+                file.write(self.tar+"\n")
+                file.write(self.vuln+"\n")
+                file.write(self.response+"\n")
+                file.write(self.result)
+        except Exception as e:
+            print("Save file opening failed")
+            print(e)
         
-
     
-    
-    # Start of the LaTeX document
     def setPreamble(self):
         self.PREAMBLE = """\documentclass[11pt]{article}
 
@@ -101,7 +109,7 @@ class IncidentWriter():
 		
 		\\line(1,0){300} \\\\
 		[0.25in]
-		\\huge{\\bfseries M57} \\\\
+		\\huge{\\bfseries Team 11} \\\\
 		[2mm]
 		\\line(1,0){200} \\\\
 		[1.5cm]
@@ -113,20 +121,11 @@ class IncidentWriter():
 		\\textsc{\\large %s \\\\
 			Found: %s \\\\}
 	\\end{flushright}
-\\end{titlepage}""" % (str(self.incNum),str(self.tar),str("01/24/19") )
-
+\\end{titlepage}""" % (str(self.incNum),str(self.tar),str("02/02/19"))
 
     def setEndamble(self):
         self.ENDAMBLE = """\end{document}"""
-
-    # Parses the discord message looking for a tag
-    def msgParse(self, text, TAG):
-        i = text.index(TAG) + len(TAG) # First letter of data
-        j = text.index(TAG[0] + "/" + TAG[1:]) # One past last letter of data
         
-        return text[i:j]
-              
-
     # Takes a string of image filenames seperated by commas
     def secImages(self,data):
         combo = "\\section*{Images}\\label{sec:img}\n"
@@ -169,51 +168,10 @@ class IncidentWriter():
         combo = "\\section*{Result}\\label{sec:result}\n"
         combo += data + "\n"
         return combo
-        
-    # Write out to a tex file
-    def writeToTexFile(self):
-    
-        try:
-            fout = os.path.join("./inc_tex/",str(self.incNum)+".tex")
-            with open(fout,"w") as file:
-                file.write(self.PREAMBLE)
-                
-                if (self.imgs != ""):
-                    file.write(self.imgs)
-                if (self.attInfo != ""):
-                    file.write(self.attInfo)
-                if (self.tar != ""):
-                    file.write(self.tar)
-                if (self.vuln != ""):
-                    file.write(self.vuln)
-                if (self.response != ""):
-                    file.write(self.response)
-                if (self.result != ""):
-                    file.write(self.result)
-                    
-                file.write(self.ENDAMBLE)
-        except Exception as e:
-            print("Tex file opening failed")
-            print(e)
             
-    def writeToSaveFile(self):
-        try:
-            fout = os.path.join("./inc_raw/",str(self.incident.incNum)+".txt")
-            with open(fout,"w") as file:
-                file.write(str(self.incident.incNum)+"\n")
-                file.write(self.incident.imgs+"\n")
-                file.write(self.incident.attInfo+"\n")
-                file.write(self.incident.tar+"\n")
-                file.write(self.incident.vuln+"\n")
-                file.write(self.incident.response+"\n")
-                file.write(self.incident.result)
-        except Exception as e:
-            print("Save file opening failed")
-            print(e)
-            
-if __name__ == "__main__":
-    test = IncidentWriter("<date>Novemeber 11, 2018</date><attInfo>The attacker came from california</attInfo>",1)
-    test.writeToFile("outfile.tex")
-    print(time.localtime(time.time()))   
+#if __name__ == "__main__":
+#    test = IncidentWriter("<date>Novemeber 11, 2018</date><attInfo>The attacker came from california</attInfo>",1)
+#    test.writeToFile("outfile.tex")
+#    print(time.localtime(time.time()))   
 
 
