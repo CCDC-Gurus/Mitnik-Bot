@@ -107,7 +107,7 @@ async def on_message(message):
 -l [num]             lists current incidents (or a single incident)
 -n                   create a new incident"""
 
-    INCIDENT_TAGS = ["", "Img Path", "Attacker", "Target", "Vulnerability", "Response Taken", "Result"]
+    INCIDENT_TAGS = ["Number", "Img Path", "Attacker", "Target", "Found", "Vulnerability", "Response Taken", "Result"]
 
     ## Debug stuff
     auth = str(message.author)
@@ -157,67 +157,85 @@ async def on_message(message):
                     # Create new incident
                     incident = IncidentWriter.Incident(tool_countIncidents()+1)
                     
-                    # Send message
-                    await client.send_message(message.channel, 'New Incident #' + str(incident.get_num()))
+                    
+                    # IMAGES - Send message
+                    await client.send_message(message.channel, 'New Incident #' + str(incident.get_num()) + "\nBe as detailed as possible.\n")
                     await client.send_message(message.channel, 'Upload all relevant images:\n(Type "done" when finished.)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
-                    num_imgs = 1
-                    while (len(input.attachments) > 0):
+                    
+                    num_imgs = 1 # For naming the images
+                    img_names = [] # To save correctly
+                    
+                    while (len(input.attachments) > 0): # Incase they somehow attach two images to the same message, may not work though
                         print(input.attachments[0]["url"])
-                        #urllib.request.urlretrieve(input.attachments[0]["url"], "inc_" + str(tool_countIncidents()+1) + "_img_" + str(num_imgs) + ".jpg")
+                        
+                        # Have to send a different user-agent to get the pics
                         r = requests.get(input.attachments[0]["url"], stream=True, headers={'User-agent': 'Mozilla/5.0'})
+                        name = "inc_" + str(tool_countIncidents()+1) + "_img_" + str(num_imgs) + ".jpg"
+                        img_names.append(name)
                         if r.status_code == 200:
-                            with open("images/inc_" + str(tool_countIncidents()+1) + "_img_" + str(num_imgs) + ".jpg", 'wb') as f:
+                            with open(name, 'wb') as f:
                                 r.raw.decode_content = True
                                 shutil.copyfileobj(r.raw, f)
                         else:
                             print("Failed to grab image")
-                        
-                        
-                        
+                            await client.send_message(message.channel, 'Did not grab that last image. Try again.')
+    
                         input = await client.wait_for_message(author=message.author)
                         num_imgs += 1
+
                     # Set images
-                    incident.set_imgs("test")
+                    incident.set_imgs(img_names)
                     
-                    # Send message
-                    await client.send_message(message.channel,'Enter Attacker info:')
+                    # ATTACKER - Send message
+                    await client.send_message(message.channel,'Who attacked the box?:\n(n/a if unknown.)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set attacker
                     incident.set_attacker(input.content)
                     
-                    # Send message
-                    await client.send_message(message.channel,'Enter Target info:')
+                    # TARGET - Send message
+                    await client.send_message(message.channel,'Enter Target info:\n(What box/system/process was attacked)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set attacker
                     incident.set_target(input.content)
                     
-                    # Send message
-                    await client.send_message(message.channel,'Enter what was Vulnerable:')
+                    # FOUND - Send message
+                    await client.send_message(message.channel,'Enter how incident was Found:\n(Logs, searching dir, rkhunter)')
+                    # Receive input
+                    input = await client.wait_for_message(author=message.author)
+                    # Set attacker
+                    incident.set_found(input.content)
+                    
+                    # VULN - Send message
+                    await client.send_message(message.channel,'Enter what was Vulnerable:\n(Might be inherent in the box/process)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set vulnerability
                     incident.set_vulnerability(input.content)
                     
-                    # Send message
-                    await client.send_message(message.channel,'Enter Response taken:')
+                    # RESPONSE - Send message
+                    await client.send_message(message.channel,'Enter Response taken:\n(This can be kicking a user, deleting a file, blocking IP, etc)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set response
                     incident.set_response(input.content)
                     
-                    # Send message
-                    await client.send_message(message.channel,'Enter Result of Repsonse:')
+                    # RESULT - Send message
+                    await client.send_message(message.channel,'Enter Result of Repsonse:\n(Are they gone, was data stolen)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set result
                     incident.set_result(input.content)
                     
-                    incident.saveall()
-                    #IncWriter = IncidentWriter.IncidentWriter(incident) # Should write to save and tex file
+                    ## All saves were successful
+                    if (incident.saveall()):
+                        await client.send_message(message.channel,'Saving was successful.')
+                    else:
+                        await client.send_message(message.channel,'Something went wrong, yell at someone.')
+                    
                     
                 # 2ARG - LIST MODE
                 elif (args[1] == '-L'):
@@ -228,9 +246,9 @@ async def on_message(message):
 
                             output += "Incident num " + str(cnt) + ":\n"
                             with open(os.path.join("./inc_raw/",fin),"r") as file:
-                                i = 1
+                                i = 0
                                 for line in file:
-                                    output += str(i) + "> " + str(line) + "\n"
+                                    output += INCIDENT_TAGS[i] + "> " + str(line) + "\n"
                                     i += 1
                             output += "\n"
                             cnt += 1
@@ -350,9 +368,9 @@ async def on_message(message):
                     if inc2edit > 0 and inc2edit <= TOT_INC:
                         output += "Incident num " + str(inc2edit) + ":\n"
                         with open(os.path.join("./inc_raw/",str(inc2edit)+".txt"),"r") as file:
-                            i = 1
+                            i = 0
                             for line in file:
-                                output += str(i) + "> " + str(line) + "\n"
+                                output += INCIDENT_TAGS[i] + "> " + str(line) + "\n"
                                 i += 1
                             output += "\n"
                     else:
@@ -382,10 +400,7 @@ async def on_message(message):
                     await client.send_message(message.channel, "Invalid use of this command.")
                 
 
-            
-            
-        
-        
+   
     
     
     

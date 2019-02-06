@@ -1,15 +1,20 @@
+## IncidentWriter 
+## A representation for Incidents that might occur during
+## a CCDC competition.
+## Gavin Lewis - 2018
 
+from time import gmtime, strftime
 import os
-
         
 class Incident():
     
     def __init__(self,incNum):
         
         self.incNum = incNum
-        self.imgs = ""
+        self.imgs = []
         self.attInfo = ""
         self.tar = ""
+        self.found = ""
         self.vuln = ""
         self.response = ""
         self.result = ""
@@ -18,9 +23,14 @@ class Incident():
         try:
             with open(os.path.join("./inc_raw/",str(num).strip()+".txt"),"r") as file:
                 self.incNum = file.readline().strip()
-                self.imgs = file.readline().strip()
+                
+                ## NEEDS UPDATED
+                tmp_imgs = file.readline().strip().split(",")
+                tmp_imgs.pop()
+                self.imgs = tmp_imgs
                 self.attInfo = file.readline().strip()
                 self.tar = file.readline().strip()
+                self.found = file.readline().strip()
                 self.vuln = file.readline().strip()
                 self.response = file.readline().strip()
                 self.result = file.readline().strip()
@@ -32,13 +42,16 @@ class Incident():
         self.incNum = num
         
     def set_imgs(self, imgs):
-        self.imgs = imgs
+        self.imgs = imgs # Instead of a string, this is a list
         
     def set_attacker(self, attacker):
         self.attInfo = attacker
         
     def set_target(self, target):
         self.tar = target
+        
+    def set_found(self, found):
+        self.found = found
         
     def set_vulnerability(self, vuln):
         self.vuln = vuln
@@ -53,8 +66,10 @@ class Incident():
         return self.incNum
         
     def saveall(self):
-        self.write_to_tex()
-        self.write_to_raw()
+        if (self.write_to_tex() and self.write_to_raw()):
+            return True
+        else:
+            return False
         
     def write_to_tex(self):
         self.setPreamble()
@@ -71,6 +86,8 @@ class Incident():
                     file.write(self.secAttackInfo(self.attInfo))
                 if (self.tar != ""):
                     file.write(self.secTarget(self.tar))
+                if (self.found != ""):
+                    file.write(self.secFound(self.found))
                 if (self.vuln != ""):
                     file.write(self.secVulnerability(self.vuln))
                 if (self.response != ""):
@@ -79,30 +96,39 @@ class Incident():
                     file.write(self.secResult(self.result))
                     
                 file.write(self.ENDAMBLE)
+                os.system("pdflatex " + fout)
+                return True
         except Exception as e:
-            print("Tex file opening failed")
+            print("Tex file saving failed")
             print(e)
+            return False
             
     def write_to_raw(self):
         try:
             fout = os.path.join("./inc_raw/",str(self.incNum)+".txt")
             with open(fout,"w") as file:
                 file.write(str(self.incNum)+"\n")
-                file.write(self.imgs+"\n")
+                # Images are stored in a list
+                for img in self.imgs:
+                    file.write(img+",")
+                file.write("\n")
                 file.write(self.attInfo+"\n")
                 file.write(self.tar+"\n")
+                file.write(self.found+"\n")
                 file.write(self.vuln+"\n")
                 file.write(self.response+"\n")
                 file.write(self.result)
+            return True
         except Exception as e:
             print("Save file opening failed")
             print(e)
-        
+            return False
     
     def setPreamble(self):
-        self.PREAMBLE = """\documentclass[11pt]{article}
-
+        self.PREAMBLE = """\\documentclass[11pt]{article}
+\\usepackage{graphicx}
 \\begin{document}
+
 
 \\begin{titlepage}
 	\\begin{center}
@@ -121,19 +147,21 @@ class Incident():
 		\\textsc{\\large %s \\\\
 			Found: %s \\\\}
 	\\end{flushright}
-\\end{titlepage}""" % (str(self.incNum),str(self.tar),str("02/02/19"))
+\\end{titlepage}\n""" % (str(self.incNum),str(self.tar),strftime("%A, %d %B, %Y. %H:%M"))
 
     def setEndamble(self):
         self.ENDAMBLE = """\end{document}"""
         
-    # Takes a string of image filenames seperated by commas
+    # Takes list of image file names
+    # Needs to return a string
     def secImages(self,data):
         combo = "\\section*{Images}\\label{sec:img}\n"
-        images = data.split(",")
+        #images = data.split(",")
         
-        for img in images:
+        # img is a filename
+        for img in self.imgs:
             combo += """\\begin{figure}
-  \\includegraphics[width=\\linewidth]{%s}
+  \\includegraphics[width=\\linewidth]{../images/%s}
 \\end{figure}\n
 """ % (img.strip())
         
@@ -141,13 +169,19 @@ class Incident():
     
     # A String representing the paragraph
     def secAttackInfo(self,data):
-        combo = "\\section*{Attack Information}\\label{sec:attinfo}\n"
+        combo = "\\section*{Attacker Information}\\label{sec:attinfo}\n"
         combo += data + "\n"
         return combo
         
     # A String representing the paragraph
     def secTarget(self,data):
         combo = "\\section*{Target}\\label{sec:tar}\n"
+        combo += data + "\n"
+        return combo
+        
+    # A String representing the paragraph
+    def secFound(self,data):
+        combo = "\\section*{How the Attack was Found}\\label{sec:found}\n"
         combo += data + "\n"
         return combo
         
@@ -159,13 +193,13 @@ class Incident():
         
     # A String representing the paragraph
     def secResponse(self,data):
-        combo = "\\section*{Response}\\label{sec:response}\n"
+        combo = "\\section*{Response to Attack}\\label{sec:response}\n"
         combo += data + "\n"
         return combo
         
     # A String representing the paragraph
     def secResult(self,data):
-        combo = "\\section*{Result}\\label{sec:result}\n"
+        combo = "\\section*{Result of Response}\\label{sec:result}\n"
         combo += data + "\n"
         return combo
             
