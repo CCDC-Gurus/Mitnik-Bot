@@ -76,6 +76,7 @@ def tool_countIncidents():
         count += 1
     return count
 
+    
 # Runs on turn on
 @client.event
 async def on_ready():
@@ -110,7 +111,8 @@ async def on_message(message):
     INCIDENT_TAGS = ["Number", "Img Path", "Attacker", "Target", "Found", "Vulnerability", "Response Taken", "Result"]
 
     ## Debug stuff
-    auth = str(message.author)
+    auth = str(message.author) # Author of this message
+    curr_channel = message.channel # Channel this message is from
     print(auth + ": " + message.content) # Print to console
     msg = str(message.content.upper())
     
@@ -161,6 +163,7 @@ async def on_message(message):
                     # IMAGES - Send message
                     await client.send_message(message.channel, 'New Incident #' + str(incident.get_num()) + "\nBe as detailed as possible.\n")
                     await client.send_message(message.channel, 'Upload all relevant images:\n(Type "done" when finished.)')
+                    
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     
