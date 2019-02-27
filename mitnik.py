@@ -134,6 +134,7 @@ async def on_message(message):
         args = msg.split(" ")
 
 ################################################################################################
+################################################################################################
         if args[0] == '?HELP':
             
             if (len(args) == 1):
@@ -141,10 +142,15 @@ async def on_message(message):
             elif (len(args) > 1):
                 await client.send_message(message.channel, "Not implemented yet")
                 
+################################################################################################
 ################################################################################################        
         if args[0] == '?INCIDENT':
 
-            ## There is only one argument
+########################################################
+###
+###     INCIDENT - 1 Argument - List all flags
+###
+########################################################
             if (len(args) == 1):
                 await client.send_message(message.channel, INCIDENT_MSG)
                         
@@ -153,8 +159,14 @@ async def on_message(message):
             
                 if (args[1] == '-H'):
                     await client.send_message(message.channel, INCIDENT_MSG)
-                    
-                ## 2ARG - NEW MODE
+
+########################################################
+###
+###     INCIDENT - 2 Arguments - NEW - LIST - INVALID
+###
+########################################################                    
+                
+################## 2ARG - NEW MODE
                 elif (args[1] == '-N'):
                     # Create new incident
                     incident = IncidentWriter.Incident(tool_countIncidents()+1)
@@ -178,7 +190,7 @@ async def on_message(message):
                         name = "inc_" + str(tool_countIncidents()+1) + "_img_" + str(num_imgs) + ".jpg"
                         img_names.append(name)
                         if r.status_code == 200:
-                            with open(name, 'wb') as f:
+                            with open("images\\" + name, 'wb') as f:
                                 r.raw.decode_content = True
                                 shutil.copyfileobj(r.raw, f)
                         else:
@@ -240,7 +252,7 @@ async def on_message(message):
                         await client.send_message(message.channel,'Something went wrong, yell at someone.')
                     
                     
-                # 2ARG - LIST MODE
+################## 2ARG - LIST MODE
                 elif (args[1] == '-L'):
                     output = ""
                     cnt = 1
@@ -260,7 +272,7 @@ async def on_message(message):
 
                     await client.send_message(message.channel,output)    
                     
-                # 2ARG - INVALID FLAG
+################## 2ARG - INVALID FLAG
                 else:
                     # Send error
                     if (args[1] == '-E'):
@@ -270,10 +282,14 @@ async def on_message(message):
                         func_help(message,client)
         
             
-            ## There is exactly 3 arguments
+########################################################
+###
+###     INCIDENT - 3 Arguments - EDIT - LIST
+###
+########################################################
             elif (len(args) == 3):
                 
-                ## 3ARG - EDIT MODE
+################## 3ARG - EDIT MODE
                 if (args[1] == '-E'):
                     # Check this is a valid edit
                     inc_2_edit = int(args[2])
@@ -284,9 +300,10 @@ async def on_message(message):
                         1) Image Paths
                         2) Attacker Info
                         3) Target Info
-                        4) Vulnerability
-                        5) Response Taken
-                        6) Results\n"""
+                        4) How incident was found
+                        5) Vulnerability
+                        6) Response Taken
+                        7) Results\n"""
                         
                         # Obtain a valid option to choose
                         ready = False
@@ -334,21 +351,28 @@ async def on_message(message):
                                 input = await client.wait_for_message(author=message.author)
                                 # Set attacker
                                 incident.set_target(input.content)
-                            elif attr == 4:
+                            elif attr == 4:    
+                                # Send message
+                                await client.send_message(message.channel,'Update how the incident was found:')
+                                # Receive input
+                                input = await client.wait_for_message(author=message.author)
+                                # Set vulnerability
+                                incident.set_found(input.content)
+                            elif attr == 5:
                                 # Send message
                                 await client.send_message(message.channel,'Update what was Vulnerable:')
                                 # Receive input
                                 input = await client.wait_for_message(author=message.author)
                                 # Set vulnerability
                                 incident.set_vulnerability(input.content)
-                            elif attr == 5:
+                            elif attr == 6:
                                 # Send message
                                 await client.send_message(message.channel,'Update Response taken:')
                                 # Receive input
                                 input = await client.wait_for_message(author=message.author)
                                 # Set response
                                 incident.set_response(input.content)
-                            elif attr == 6:
+                            elif attr == 7:
                                 # Send message
                                 await client.send_message(message.channel,'Update Result of Repsonse:')
                                 # Receive input
@@ -359,9 +383,9 @@ async def on_message(message):
                         incident.saveall()
 
                     else:
-                        print("Invalied incident target")
+                        print("Invalid incident target")
                 
-                # 3ARG - LIST MODE
+################## 3ARG - LIST MODE
                 elif (args[1] == '-L'):
                     output = ""
                     TOT_INC = tool_countIncidents()
@@ -380,10 +404,13 @@ async def on_message(message):
                         output = "Not a valid incident to edit."
 
                     await client.send_message(message.channel,output)
+
+################## 3ARG - INVALID FLAG
                 else:
                     # Send error
-                    await client.send_message(message.channel, 'Invalid incident chosen.')
+                    await client.send_message(message.channel, 'Invalid flag usage.')
             
+################################################################################################
 ################################################################################################
         if args[0] == '?GENPASS':
             
@@ -401,8 +428,11 @@ async def on_message(message):
                     await client.send_message(message.channel, "?GENPASS [0 < num <= 5]\n  Will generate a password of the length provided.")
                 else:
                     await client.send_message(message.channel, "Invalid use of this command.")
-                
 
+################################################################################################
+################################################################################################
+        if args[0] == '?SANDWICHES':
+            
    
     
     

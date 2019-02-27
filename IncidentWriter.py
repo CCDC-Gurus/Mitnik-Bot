@@ -5,6 +5,28 @@
 
 from time import gmtime, strftime
 import os
+
+
+########################################################
+###     An Incident object represents a single incident
+### with the following attributes:
+###         1) Incident Number
+###         2) An array of Images
+###         3) Attacker information
+###         4) Targeted machine/service
+###         5) How it was found
+###         6) What was vulnerable
+###         7) Response taken to incident
+###         8) Result of incident
+###     Functions inlcude:
+###         1) Saving to a .tex file
+###         2) Saving to a .txt file
+###         3) Creating new incidents from user inupt.
+###         4) Listing current incidents.
+###         5) Editing incidents.
+###
+###
+########################################################
         
 class Incident():
     
@@ -18,7 +40,12 @@ class Incident():
         self.vuln = ""
         self.response = ""
         self.result = ""
-        
+   
+########################################################
+###
+###     Generates an incident incident from a .txt file
+###
+########################################################
     def fromexisting(self, num):
         try:
             with open(os.path.join("./inc_raw/",str(num).strip()+".txt"),"r") as file:
@@ -37,7 +64,12 @@ class Incident():
                 
         except Exception as e:
             print(e)
-        
+
+########################################################
+###
+###     Setters for member variables
+###
+########################################################            
     def set_num(self, num):
         self.incNum = num
         
@@ -65,6 +97,11 @@ class Incident():
     def get_num(self):
         return self.incNum
         
+########################################################
+###
+###     Saving operations
+###
+########################################################
     def saveall(self):
         if (self.write_to_tex() and self.write_to_raw()):
             return True
@@ -96,7 +133,7 @@ class Incident():
                     file.write(self.secResult(self.result))
                     
                 file.write(self.ENDAMBLE)
-                os.system("pdflatex " + fout)
+                #os.system("pdflatex " + fout)
                 return True
         except Exception as e:
             print("Tex file saving failed")
@@ -123,7 +160,14 @@ class Incident():
             print("Save file opening failed")
             print(e)
             return False
-    
+
+########################################################
+###
+###     The following assist in formatting for use in
+### saving to a LaTeX file format. The pdf will begin
+### generated outside of the program.
+###
+########################################################
     def setPreamble(self):
         self.PREAMBLE = """\\documentclass[11pt]{article}
 \\usepackage{graphicx}
@@ -203,9 +247,3 @@ class Incident():
         combo += data + "\n"
         return combo
             
-#if __name__ == "__main__":
-#    test = IncidentWriter("<date>Novemeber 11, 2018</date><attInfo>The attacker came from california</attInfo>",1)
-#    test.writeToFile("outfile.tex")
-#    print(time.localtime(time.time()))   
-
-
