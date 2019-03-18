@@ -1,36 +1,24 @@
-## Mitnik - CCDC Discord Helper
-## A bot to provide help with different CCDC functions such as
-## incident reports, inject monitoring, and password generation.
-## Gavin Lewis - 2018
+# Mitnik - CCDC Discord Helper
+# A bot to provide help with different CCDC functions such as
+# incident reports, inject monitoring, and password generation.
+# Gavin Lewis - 2018
 
-"""
-
-    Imports
-
-    
-"""
-
-import discord
-from discord.ext.commands import Bot
 from discord.ext import commands
-import asyncio
 import logging
 import os
-import urllib.request
 import requests
 import shutil
+import random
 
 import IncidentWriter
 import PasswdGen
 import secrets
 
-## Have to run this
-## https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=0
-## to add to a server. Need manage permissions
+# Have to run this
+# https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=0
+# to add to a server. Need manage permissions
 
-"""
-
-This bot will have a few functions
+"""This bot will have a few functions
 
     - Timer for injects
         a) Display description          
@@ -39,22 +27,20 @@ This bot will have a few functions
     - Incident Creator
         a) Manage and create incident reports
     - Password generator
-
 """
 
-"""
-    Logging functions
-"""
-
-logger = logging.getLogger('discord')
-logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logger.addHandler(handler)
+# Logging functions
+log = False
+if log:
+    logger = logging.getLogger('discord')
+    logger.setLevel(logging.DEBUG)
+    handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+    handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+    logger.addHandler(handler)
 
 description = """You better work"""
 
-## Make sure directories are there
+# Make sure directories are there
 if not(os.path.isdir("images")):
     os.mkdir("images")
 if not(os.path.isdir("inc_tex")):
@@ -63,13 +49,10 @@ if not(os.path.isdir("inc_raw")):
     os.mkdir("inc_raw")
 
 
-## Init the bot
-client = commands.Bot(command_prefix = "?", description=description)
+# Init the bot
+client = commands.Bot(command_prefix="?", description=description)
 
-"""
-    Tools
-"""
-
+# Tools
 def tool_countIncidents():
     count = 0
     for name in os.listdir('./inc_raw'):
@@ -80,28 +63,32 @@ def tool_countIncidents():
 # Runs on turn on
 @client.event
 async def on_ready():
+    """Run on bot start"""
     print("Mitnik: ONLINE")
     
     print("Current incidents: " + str(tool_countIncidents()))
-    
-## Commands
-HELP = '?HELP'
-INC_EDIT = '?INCIDENT -e '
+
 
 @client.command()
-async def add(ctx,arg):
+async def add(ctx, arg):
+    """Not sure what this was for."""
+
     print("HERE:")
     await ctx.send(arg)
+
 
 # Reactions to messages
 @client.event
 async def on_message(message):
+    """Handles and reacts to messages."""
+
     HELP_MSG = """Welcome, I am Mitnik, here to help you.
     (Use the flag -H on any command to find help)
     
 ?HELP - Bring up this message
 ?INCIDENT - Create/Edit/List Incidents
-?GENPASS - Generate a password"""
+?GENPASS - Generate a password
+?SANDWICH - Hungry?"""
     
     INCIDENT_MSG = """Choose a flag:
 -e [num]             edit incident [num]
@@ -110,79 +97,64 @@ async def on_message(message):
 
     INCIDENT_TAGS = ["Number", "Img Path", "Attacker", "Target", "Found", "Vulnerability", "Response Taken", "Result"]
 
-    ## Debug stuff
+    # Debug stuff
     auth = str(message.author) # Author of this message
     curr_channel = message.channel # Channel this message is from
     print(auth + ": " + message.content) # Print to console
     msg = str(message.content.upper())
-    
-    ## TEST ZONE
-    #print(len(message.embeds))
-    #print(message.attachments[0])
-    #if (len(message.embeds) > 0):
-    #    print(message.embeds[0].title)
-    #    print(message.embeds[0].type)
-    #    print(message.embeds[0].url)
-    #    print(message.embeds[0].image)
-    
-    
-    
-    
-        
-    ## Command switch
+
+    # Command switch
     if msg.startswith('?'):
         args = msg.split(" ")
 
-################################################################################################
-################################################################################################
         if args[0] == '?HELP':
             
-            if (len(args) == 1):
+            if len(args) == 1:
                 await client.send_message(message.channel, HELP_MSG)
-            elif (len(args) > 1):
+            elif len(args) > 1:
                 await client.send_message(message.channel, "Not implemented yet")
-                
-################################################################################################
-################################################################################################        
+
         if args[0] == '?INCIDENT':
 
-########################################################
-###
-###     INCIDENT - 1 Argument - List all flags
-###
-########################################################
-            if (len(args) == 1):
+            ######################################################
+            #
+            #     INCIDENT - 1 Argument - List all flags
+            #
+            ######################################################
+            if len(args) == 1:
                 await client.send_message(message.channel, INCIDENT_MSG)
-                        
-            ## THERE IS exactly 2 ARGUMENTS    
-            elif (len(args) == 2): 
-            
-                if (args[1] == '-H'):
+
+            ######################################################
+            #
+            #     INCIDENT - 2 Arguments - HELP - NEW - LIST - INVALID
+            #
+            ######################################################
+            elif len(args) == 2:
+
+                # 2ARG - HELP MODE
+                if args[1] == '-H':
                     await client.send_message(message.channel, INCIDENT_MSG)
 
-########################################################
-###
-###     INCIDENT - 2 Arguments - NEW - LIST - INVALID
-###
-########################################################                    
-                
-################## 2ARG - NEW MODE
-                elif (args[1] == '-N'):
+                # 2ARG - NEW MODE
+                elif args[1] == '-N':
                     # Create new incident
                     incident = IncidentWriter.Incident(tool_countIncidents()+1)
-                    
-                    
+
                     # IMAGES - Send message
-                    await client.send_message(message.channel, 'New Incident #' + str(incident.get_num()) + "\nBe as detailed as possible.\n")
-                    await client.send_message(message.channel, 'Upload all relevant images:\n(Type "done" when finished.)')
+                    await client.send_message(message.channel,
+                                              'New Incident #' + str(incident.get_num())
+                                              + "\nBe as detailed as possible.\n")
+                    await client.send_message(message.channel,
+                                              'Upload all relevant images:\n(Type "done" when finished.)')
                     
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     
-                    num_imgs = 1 # For naming the images
-                    img_names = [] # To save correctly
-                    
-                    while (len(input.attachments) > 0): # Incase they somehow attach two images to the same message, may not work though
+                    num_imgs = 1  # For naming the images
+                    img_names = []  # To save correctly
+
+                    # In case they somehow attach two images to the same message, may not work though
+                    while len(input.attachments) > 0:
                         print(input.attachments[0]["url"])
                         
                         # Have to send a different user-agent to get the pics
@@ -204,63 +176,70 @@ async def on_message(message):
                     incident.set_imgs(img_names)
                     
                     # ATTACKER - Send message
-                    await client.send_message(message.channel,'Who attacked the box?:\n(n/a if unknown.)')
+                    await client.send_message(message.channel, 'Who attacked the box?:\n(n/a if unknown.)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set attacker
                     incident.set_attacker(input.content)
                     
                     # TARGET - Send message
-                    await client.send_message(message.channel,'Enter Target info:\n(What box/system/process was attacked)')
+                    await client.send_message(message.channel,
+                                              'Enter Target info:\n(What box/system/process was attacked)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set attacker
                     incident.set_target(input.content)
                     
                     # FOUND - Send message
-                    await client.send_message(message.channel,'Enter how incident was Found:\n(Logs, searching dir, rkhunter)')
+                    await client.send_message(message.channel,
+                                              'Enter how incident was Found:\n(Logs, searching dir, rkhunter)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set attacker
                     incident.set_found(input.content)
                     
                     # VULN - Send message
-                    await client.send_message(message.channel,'Enter what was Vulnerable:\n(Might be inherent in the box/process)')
+                    await client.send_message(message.channel,
+                                              'Enter what was Vulnerable:\n(Might be inherent in the box/process)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set vulnerability
                     incident.set_vulnerability(input.content)
                     
                     # RESPONSE - Send message
-                    await client.send_message(message.channel,'Enter Response taken:\n(This can be kicking a user, deleting a file, blocking IP, etc)')
+                    await client.send_message(message.channel,
+                                              'Enter Response taken:'
+                                              '\n(This can be kicking a user, deleting a file, blocking IP, etc)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set response
                     incident.set_response(input.content)
                     
                     # RESULT - Send message
-                    await client.send_message(message.channel,'Enter Result of Repsonse:\n(Are they gone, was data stolen)')
+                    await client.send_message(message.channel,
+                                              'Enter Result of Response:\n(Are they gone, was data stolen)')
                     # Receive input
                     input = await client.wait_for_message(author=message.author)
                     # Set result
                     incident.set_result(input.content)
                     
-                    ## All saves were successful
-                    if (incident.saveall()):
-                        await client.send_message(message.channel,'Saving was successful.')
+                    # All saves were successful
+                    if incident.saveall():
+                        await client.send_message(message.channel,
+                                                  'Saving was successful.')
                     else:
-                        await client.send_message(message.channel,'Something went wrong, yell at someone.')
-                    
-                    
-################## 2ARG - LIST MODE
-                elif (args[1] == '-L'):
+                        await client.send_message(message.channel,
+                                                  'Something went wrong, yell at someone.')
+
+                # 2ARG - LIST MODE
+                elif args[1] == '-L':
                     output = ""
                     cnt = 1
                     if tool_countIncidents() > 0:
                         for fin in os.listdir("./inc_raw/"):  # For each file
 
                             output += "Incident num " + str(cnt) + ":\n"
-                            with open(os.path.join("./inc_raw/",fin),"r") as file:
+                            with open(os.path.join("./inc_raw/", fin), "r") as file:
                                 i = 0
                                 for line in file:
                                     output += INCIDENT_TAGS[i] + "> " + str(line) + "\n"
@@ -272,28 +251,27 @@ async def on_message(message):
 
                     await client.send_message(message.channel,output)    
                     
-################## 2ARG - INVALID FLAG
+                # 2ARG - INVALID FLAG
                 else:
                     # Send error
-                    if (args[1] == '-E'):
+                    if args[1] == '-E':
                         await client.send_message(message.channel, 'Invalid incident number')
                     else:
                         await client.send_message(message.channel, 'Invalid flag')
-                        func_help(message,client)
-        
-            
-########################################################
-###
-###     INCIDENT - 3 Arguments - EDIT - LIST
-###
-########################################################
+                        #func_help(message, client)
+
+            ######################################################
+            #
+            #     INCIDENT - 3 Arguments - EDIT - LIST - INVALID
+            #
+            ######################################################
             elif (len(args) == 3):
                 
-################## 3ARG - EDIT MODE
-                if (args[1] == '-E'):
+                # 3ARG - EDIT MODE
+                if args[1] == '-E':
                     # Check this is a valid edit
                     inc_2_edit = int(args[2])
-                    if (inc_2_edit > 0 and inc_2_edit <= tool_countIncidents()):
+                    if 0 < inc_2_edit <= tool_countIncidents():
                         
                         # Choose parts to edit
                         MENU = """Which would you like to edit (seperate multiple choices with commas):
@@ -339,42 +317,42 @@ async def on_message(message):
                                 incident.set_imgs("test")
                             elif attr == 2:
                                 # Send message
-                                await client.send_message(message.channel,'Update Attacker info:')
+                                await client.send_message(message.channel, 'Update Attacker info:')
                                 # Receive input
                                 input = await client.wait_for_message(author=message.author)
                                 # Set attacker
                                 incident.set_attacker(input.content)
                             elif attr == 3:
                                 # Send message
-                                await client.send_message(message.channel,'Update Target info:')
+                                await client.send_message(message.channel, 'Update Target info:')
                                 # Receive input
                                 input = await client.wait_for_message(author=message.author)
                                 # Set attacker
                                 incident.set_target(input.content)
                             elif attr == 4:    
                                 # Send message
-                                await client.send_message(message.channel,'Update how the incident was found:')
+                                await client.send_message(message.channel, 'Update how the incident was found:')
                                 # Receive input
                                 input = await client.wait_for_message(author=message.author)
                                 # Set vulnerability
                                 incident.set_found(input.content)
                             elif attr == 5:
                                 # Send message
-                                await client.send_message(message.channel,'Update what was Vulnerable:')
+                                await client.send_message(message.channel, 'Update what was Vulnerable:')
                                 # Receive input
                                 input = await client.wait_for_message(author=message.author)
                                 # Set vulnerability
                                 incident.set_vulnerability(input.content)
                             elif attr == 6:
                                 # Send message
-                                await client.send_message(message.channel,'Update Response taken:')
+                                await client.send_message(message.channel, 'Update Response taken:')
                                 # Receive input
                                 input = await client.wait_for_message(author=message.author)
                                 # Set response
                                 incident.set_response(input.content)
                             elif attr == 7:
                                 # Send message
-                                await client.send_message(message.channel,'Update Result of Repsonse:')
+                                await client.send_message(message.channel, 'Update Result of Response:')
                                 # Receive input
                                 input = await client.wait_for_message(author=message.author)
                                 # Set result
@@ -385,16 +363,16 @@ async def on_message(message):
                     else:
                         print("Invalid incident target")
                 
-################## 3ARG - LIST MODE
-                elif (args[1] == '-L'):
+                # 3ARG - LIST MODE
+                elif args[1] == '-L':
                     output = ""
                     TOT_INC = tool_countIncidents()
                     inc2edit = int(args[2])
                     
                     # If valid
-                    if inc2edit > 0 and inc2edit <= TOT_INC:
+                    if 0 < inc2edit <= TOT_INC:
                         output += "Incident num " + str(inc2edit) + ":\n"
-                        with open(os.path.join("./inc_raw/",str(inc2edit)+".txt"),"r") as file:
+                        with open(os.path.join("./inc_raw/", str(inc2edit)+".txt"), "r") as file:
                             i = 0
                             for line in file:
                                 output += INCIDENT_TAGS[i] + "> " + str(line) + "\n"
@@ -403,9 +381,9 @@ async def on_message(message):
                     else:
                         output = "Not a valid incident to edit."
 
-                    await client.send_message(message.channel,output)
+                    await client.send_message(message.channel, output)
 
-################## 3ARG - INVALID FLAG
+                # 3ARG - INVALID FLAG
                 else:
                     # Send error
                     await client.send_message(message.channel, 'Invalid flag usage.')
@@ -414,28 +392,33 @@ async def on_message(message):
 ################################################################################################
         if args[0] == '?GENPASS':
             
-            if (len(args) == 1):
+            if len(args) == 1:
                 passwd = PasswdGen.gen_password()
-                await client.send_message(message.channel, "New password: " + passwd)
+                await client.send_message(message.channel,
+                                          "New password: " + passwd)
             
-            elif (len(args) == 2):
-                if (int(args[1]) > 6):
-                    await client.send_message(message.channel, "That might be too long, keep it 5 or less")
-                elif (int(args[1]) > 0):
+            elif len(args) == 2:
+                if int(args[1]) > 6:
+                    await client.send_message(message.channel,
+                                              "That might be too long, keep it 5 or less")
+                elif int(args[1]) > 0:
                     passwd = PasswdGen.gen_password(int(args[1]))
-                    await client.send_message(message.channel, "New password: " + passwd)
-                elif (args[1] == "-H"):
-                    await client.send_message(message.channel, "?GENPASS [0 < num <= 5]\n  Will generate a password of the length provided.")
+                    await client.send_message(message.channel,
+                                              "New password: " + passwd)
+                elif args[1] == "-H":
+                    await client.send_message(message.channel,
+                                              "?GENPASS [0 < num <= 5]"
+                                              "\n  Will generate a password of the length provided.")
                 else:
-                    await client.send_message(message.channel, "Invalid use of this command.")
+                    await client.send_message(message.channel,
+                                              "Invalid use of this command.")
 
 ################################################################################################
 ################################################################################################
-        if args[0] == '?SANDWICHES':
-            
-   
-    
-    
-    
-## Connect to discord and come online
+        if args[0] == '?SANDWICH':
+            num = random.randint(0,6)
+            with open('sandwich\\' + str(num) + '.jpg', 'rb') as f:
+                await client.send_file(message.channel, f)
+
+# Connect to discord and come online
 client.run(secrets.TOKEN)
