@@ -17,3 +17,8 @@ outfile.log
 document.tex
 inc_raw/
 inc_tex/
+images/
+.idea/
+test.db
+tutorial.db
+words.txt

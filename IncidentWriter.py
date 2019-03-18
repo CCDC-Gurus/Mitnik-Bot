@@ -3,7 +3,7 @@
 ## a CCDC competition.
 ## Gavin Lewis - 2018
 
-from time import gmtime, strftime
+from time import strftime
 import os
 
 
@@ -113,7 +113,7 @@ class Incident():
         self.setEndamble()
         
         try:
-            fout = os.path.join("./inc_tex/",str(self.incNum)+".tex")
+            fout = os.path.join("./inc_tex/",str(self.incNum)+"-"+str(strftime("%H-%M-%S"))+".tex")
             with open(fout,"w") as file:
                 file.write(self.PREAMBLE)
                 
