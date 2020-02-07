@@ -412,4 +412,4 @@ async def on_message(message):
                 await message.channel.send(f)
 
 # Connect to discord and come online
-client.run(secrets.TOKEN)
+client.run("NTExOTcxNjMzMDgzMzE4Mjgz.DsyuZA.9TCkVGU3jGqeT-8NLDIpFyfjJ1I")
