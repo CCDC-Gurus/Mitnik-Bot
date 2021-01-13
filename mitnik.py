@@ -433,29 +433,29 @@ async def on_message(message):
                 # Send the EVENT help message
                 await message.channel.send(EVENT_MSG)
 
-            elif len(args) > 1:
+            elif len(args) == 2:
+                if args[1] == '-L':
+                    """ List events """
+                    # TODO List all events with db files
+                    pass
+                elif args[1] == '-N':
+                    await message.channel.send("Must include the name of the event to create.")
+                elif args[1] == '-R':
+                    await message.channel.send("Must include the name of the event to join.")
+
+            elif len(args) == 3:
+
                 if args[1] == '-N':
                     """ New event """
                     if args[2]:
                         # We have a new event to create
                         # Create database with all the tables
 
-                    else:
-                        await message.channel.send("Must include the name of the event.")
-
                 elif args[1] == '-R':
                     """ Resume event """
                     if args[2]:
                         # Check to see if event exists, then join
-
-                    else:
-                        # Need an event name
-                        await message.channel.send("Must include the name of the event to join.")
-
-                elif args[1] == '-L':
-                    """ List events """
-                    # TODO List all events with db files
-                    pass
+                        pass
 
 # Connect to discord and come online
 client.run(configs["secret"])
