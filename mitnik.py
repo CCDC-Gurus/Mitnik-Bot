@@ -14,7 +14,7 @@ import random
 
 import IncidentWriter
 import PasswdGen
-import secrets
+from config import configs
 # Have to run this
 # https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=0
 # to add to a server. Need manage permissions
@@ -39,7 +39,7 @@ if log:
     handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
 
-description = """You better work"""
+
 
 # Make sure directories are there
 if not(os.path.isdir("images")):
@@ -51,7 +51,7 @@ if not(os.path.isdir("inc_raw")):
 
 
 # Init the bot
-client = commands.Bot(command_prefix="!", description=description)
+client = commands.Bot(command_prefix=configs["prefix"], description=configs["desc"])
 
 # Tools
 def tool_countIncidents():
@@ -412,4 +412,4 @@ async def on_message(message):
                 await message.channel.send(f)
 
 # Connect to discord and come online
-client.run("NTExOTcxNjMzMDgzMzE4Mjgz.DsyuZA.9TCkVGU3jGqeT-8NLDIpFyfjJ1I")
+client.run(configs["secret"])
