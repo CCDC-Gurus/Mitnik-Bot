@@ -1,15 +1,13 @@
 
-del_member = """DROP TABLE member;"""
+del_members = """DROP TABLE members;"""
 del_incident = """DROP TABLE incident;"""
 del_incident_pic = """DROP TABLE incident_pic;"""
-del_inject = """DROP TABLE inject;"""
+del_injects = """DROP TABLE injects;"""
 
-tbl_member = """CREATE TABLE IF NOT EXISTS member(
-    MemID int NOT NULL,
-    FirstName varchar(255) NOT NULL,
-    LastName varchar(255) NOT NULL,
-    Box varchar(255),
-    PRIMARY KEY (MemID)
+tbl_members = """CREATE TABLE IF NOT EXISTS members(
+    discordUID int NOT NULL,
+    fName varchar(255) NOT NULL,
+    PRIMARY KEY (discordUID)
 );"""
 
 tbl_incident = """CREATE TABLE IF NOT EXISTS incident(
@@ -32,9 +30,12 @@ tbl_incident_pic = """CREATE TABLE IF NOT EXISTS incident_pic(
     FOREIGN KEY(PicID) REFERENCES incident(IncID)
 );"""
 
-tbl_inject = """CREATE TABLE IF NOT EXISTS inject(
-    InjectNum int NOT NULL,
-    Assigned varchar(255),
-    PRIMARY KEY (InjectNum)
+tbl_injects = """CREATE TABLE IF NOT EXISTS injects(
+    injectNum int NOT NULL,
+    title varchar(255),
+    startTime DATETIME,
+    endTime DATETIME,
+    assigned varchar(255),
+    PRIMARY KEY (injectNum)
 );"""
 

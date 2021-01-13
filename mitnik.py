@@ -11,6 +11,7 @@ import logging
 import os
 import requests
 import shutil
+import threading
 import random
 
 import IncidentWriter
@@ -49,6 +50,8 @@ if not(os.path.isdir("inc_tex")):
     os.mkdir("inc_tex")
 if not(os.path.isdir("inc_raw")):
     os.mkdir("inc_raw")
+if not(os.path.isdir("data")):
+    os.mkdir("data")
 
 
 # Init the bot
@@ -62,6 +65,10 @@ def tool_countIncidents():
     return count
 
 
+def injectChecker():
+    """Check the inject db, alert team when """
+    pass
+
     
 # Runs on turn on
 @client.event
@@ -70,6 +77,9 @@ async def on_ready():
     print("Mitnik: ONLINE")
     
     print("Current incidents: " + str(tool_countIncidents()))
+
+    # Need to start the Inject time checker
+    inject_thread = threading.Thread(target=thread_function, args=(1,), daemon=True)
 
 
 # Reactions to messages
@@ -414,6 +424,38 @@ async def on_message(message):
         if args[0] == '!SANDWICH':
             num = random.randint(1,5)
             await message.channel.send(file=discord.File(os.path.join("sandwich", str(num) + ".jpg")))
+
+################################################################################################
+################################################################################################
+        if args[0] == '!EVENT':
+            
+            if len(args) == 1:
+                # Send the EVENT help message
+                await message.channel.send(EVENT_MSG)
+
+            elif len(args) > 1:
+                if args[1] == '-N':
+                    """ New event """
+                    if args[2]:
+                        # We have a new event to create
+                        # Create database with all the tables
+
+                    else:
+                        await message.channel.send("Must include the name of the event.")
+
+                elif args[1] == '-R':
+                    """ Resume event """
+                    if args[2]:
+                        # Check to see if event exists, then join
+
+                    else:
+                        # Need an event name
+                        await message.channel.send("Must include the name of the event to join.")
+
+                elif args[1] == '-L':
+                    """ List events """
+                    # TODO List all events with db files
+                    pass
 
 # Connect to discord and come online
 client.run(configs["secret"])
