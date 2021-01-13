@@ -5,6 +5,7 @@
 # A bot to provide help with different CCDC functions such as
 # incident reports, inject monitoring, and password generation.
 # Gavin Lewis - 2018
+import discord
 from discord.ext import commands
 import logging
 import os
@@ -393,23 +394,25 @@ async def on_message(message):
                 await message.channel.send("New password: " + passwd)
             
             elif len(args) == 2:
-                if int(args[1]) > 6:
-                    await message.channel.send("That might be too long, keep it 5 or less")
-                elif int(args[1]) > 0:
-                    passwd = PasswdGen.gen_password(int(args[1]))
-                    await message.channel.send("New password: " + passwd)
-                elif args[1] == "-H":
-                    await message.channel.send("?GENPASS [0 < num <= 5]"
-                                              "\n  Will generate a password of the length provided.")
-                else:
-                    await message.channel.send("Invalid use of this command.")
+                try:
+                    if args[1] == "-H":
+                        await message.channel.send("?GENPASS [0 < num <= 5]"
+                                                "\n  Will generate a password of the length provided.")
+                    elif int(args[1]) > 6:
+                        await message.channel.send("That might be too long, keep it 5 or less")
+                    elif int(args[1]) > 0:
+                        passwd = PasswdGen.gen_password(int(args[1]))
+                        await message.channel.send("New password: " + passwd)    
+                    else:
+                        await message.channel.send("Invalid use of this command.")
+                except:
+                    await message.channel.send("Something went wrong, try checking your syntax")
 
 ################################################################################################
 ################################################################################################
         if args[0] == '!SANDWICH':
-            num = random.randint(0,6)
-            with open('sandwich\\' + str(num) + '.jpg', 'rb') as f:
-                await message.channel.send(f)
+            num = random.randint(0,5)
+            await message.channel.send(file=discord.File(os.path.join("sandwich", str(num) + ".jpg")))
 
 # Connect to discord and come online
 client.run(configs["secret"])

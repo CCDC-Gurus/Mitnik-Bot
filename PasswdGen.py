@@ -6,46 +6,29 @@ import random
 
 
 
-def get_rand_arr(num,MAX):
-    num_list = []
-    cnt = 0
-    for x in range(num):
-        flag = True
-        while flag:
-            new_rand = random.randint(0,MAX-1)
-            if not (new_rand in num_list):
-                num_list.append(new_rand)
-                flag = False
-                
-    return num_list
-
-def count_words():
-    with open("words.txt","r") as file:
-        cnt = 0
-        for line in file:
-            cnt += 1
-            
-    return cnt
-
 def gen_password(num_words = 3):
+    """Generate the password
+    
+    num_words: The number of words to use in the password
+    """
     SPECIALS = ['!','@','#','$','%','&','*']
-    MAX_WORDS = count_words()
     
     passwd = ""
-    #num_words = 3 # Num words in password
     
-    num_list = get_rand_arr(num_words, MAX_WORDS) # Decide words to use
+    # Randomly grab num_words number of words
+    with open("words.txt", "r") as word_file:
+        word_list = word_file.readlines()
+        random.shuffle(word_list)
+        words = word_list[0:num_words]
+
+    # Prepend special character
+    passwd += SPECIALS[random.randint(0,len(SPECIALS)-1)]
     
-    passwd += SPECIALS[random.randint(0,len(SPECIALS)-1)] # Prepend symbol
+    for word in words:
+        # Add each word, capitalize first letter, lower the rest, strip the newline
+        passwd += word[0].upper() + word[1:].strip().lower()
     
-    with open("words.txt","r") as file:
-        cnt = 0
-        while cnt < MAX_WORDS:
-            line = file.readline()
-            if cnt in num_list:
-                passwd += line[0].upper() + line[1:-1].lower()
-            cnt += 1
-    
+    # Append random 2 digit number
     passwd += str(random.randint(10,100))
     
     return passwd
