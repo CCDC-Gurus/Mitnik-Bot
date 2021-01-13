@@ -22,3 +22,4 @@ images/
 test.db
 tutorial.db
 words.txt
+config.py
