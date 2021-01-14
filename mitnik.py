@@ -13,7 +13,9 @@ import requests
 import shutil
 import threading
 import random
+import re
 
+import DBManager as dbm
 import IncidentWriter
 import PasswdGen
 from config import configs
@@ -53,6 +55,8 @@ if not(os.path.isdir("inc_raw")):
 if not(os.path.isdir("data")):
     os.mkdir("data")
 
+# Create general info table
+dbm.create_general()
 
 # Init the bot
 client = commands.Bot(command_prefix=configs["prefix"], description=configs["desc"])
@@ -69,7 +73,11 @@ def injectChecker():
     """Check the inject db, alert team when """
     pass
 
-    
+def re_validEventName(name):
+    """Checks if event name is valid for sys"""
+    return re.search("^[A-Za-z0-9-]+$", name)
+
+
 # Runs on turn on
 @client.event
 async def on_ready():
@@ -79,7 +87,7 @@ async def on_ready():
     print("Current incidents: " + str(tool_countIncidents()))
 
     # Need to start the Inject time checker
-    inject_thread = threading.Thread(target=thread_function, args=(1,), daemon=True)
+    #inject_thread = threading.Thread(target=thread_function, args=(1,), daemon=True)
 
 
 # Reactions to messages
@@ -101,6 +109,12 @@ async def on_message(message):
 -n                   create a new incident"""
 
     INCIDENT_TAGS = ["Number", "Img Path", "Attacker", "Target", "Found", "Vulnerability", "Response Taken", "Result"]
+
+    EVENT_MSG = """Choose a flag:
+-n [name]          create new event [name]
+-l                 list all events and their status
+-r [name]          resume an event [name]
+-c                 show current event"""
 
     # Debug stuff
     auth = str(message.author) # Author of this message
@@ -293,7 +307,7 @@ async def on_message(message):
                                 # Send message
                                 await message.channel.send(MENU)
                                 # Receive message
-                                input = await client.wait_for('message',check=pred)
+                                input = await client.wait_for('message', check=pred)
                                 
                                 ready = True
                                 input = input.content.split(',')
@@ -438,6 +452,9 @@ async def on_message(message):
                     """ List events """
                     # TODO List all events with db files
                     pass
+                elif args[1] == '-C':
+                    """ Show current event """
+                    # TODO Return the current event
                 elif args[1] == '-N':
                     await message.channel.send("Must include the name of the event to create.")
                 elif args[1] == '-R':
@@ -450,12 +467,28 @@ async def on_message(message):
                     if args[2]:
                         # We have a new event to create
                         # Create database with all the tables
+                        if re_validEventName(args[2]):
+                            # create dbs
+                            print("Creating dbs")
+                            dbm.create_event(args[2])
+                            # create category and channels
+                            print("Creating channels")
+                            categ = await message.guild.create_category(args[2])
+                            await categ.create_text_channel("general")
+                            await categ.create_text_channel("info")
+                            print("Done")
+                            await message.channel.send("Created new event: " + args[2])
+                        else:
+                            await message.channel.send("Invalid event name. Use only letters, numbers and dashes.")
 
                 elif args[1] == '-R':
                     """ Resume event """
                     if args[2]:
                         # Check to see if event exists, then join
-                        pass
+                        if re_validEventName(args[2]):
+                            pass
 
+            else:
+                await message.channel.send("Invalid use of command.")
 # Connect to discord and come online
 client.run(configs["secret"])
