@@ -459,7 +459,11 @@ async def on_message(message):
                     await message.channel.send("Must include the name of the event to create.")
                 elif args[1] == '-R':
                     await message.channel.send("Must include the name of the event to join.")
-
+                elif args[1] == '-J':
+                    await message.channel.send("Must include your first name.")
+                else:
+                    await message.channel.send("Invalid flag.")
+            
             elif len(args) == 3:
 
                 if args[1] == '-N':
@@ -480,6 +484,8 @@ async def on_message(message):
                             await message.channel.send("Created new event: " + args[2])
                         else:
                             await message.channel.send("Invalid event name. Use only letters, numbers and dashes.")
+                    else:
+                        await message("Please provide a valid event name.")
 
                 elif args[1] == '-R':
                     """ Resume event """
@@ -487,8 +493,16 @@ async def on_message(message):
                         # Check to see if event exists, then join
                         if re_validEventName(args[2]):
                             pass
+                    
+                elif args[1] == '-J':
+                    if args[2]:
+                        # TODO fill in curreven
+                        dbm.member_join_event(message.author.id, args[2], currevent)
+                else:
+                    await message.channel.send("Invalid flag.")
 
             else:
                 await message.channel.send("Invalid use of command.")
+
 # Connect to discord and come online
 client.run(configs["secret"])

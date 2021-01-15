@@ -8,6 +8,16 @@ import sqlite3
 
 import tableSetup as ts
 
+
+def open_database():
+    """Open a connection to the database.
+
+    Returns a cursor for the defined database."""
+    co = sqlite3.connect('general.db')
+    cu = co.cursor()
+
+    return co, cu
+
 def create_general():
     """Creates the general info db. Has a table with all events, 
        and keeps track of the active one.
@@ -17,10 +27,12 @@ def create_general():
        No default event, none could be active.
     """
 
-    conn = sqlite3.connect("general.db")
-    curs = conn.cursor()
+    conn, curs = open_database()
     # Create the table
     curs.execute(ts.tbl_events)
+    curs.execute(ts.tbl_members)
+    curs.execute(ts.tbl_injects)
+    curs.execute(ts.tbl_incidents)
     conn.commit()
     conn.close()
 
@@ -41,18 +53,17 @@ def create_event(event_name):
         # TODO Load the event
         pass
     else:
-        # Create the db
-        conn = sqlite3.connect(db_path)
-        curs = conn.cursor()
-        # Create the tables
-        curs.execute(ts.tbl_members)
-        curs.execute(ts.tbl_injects)
-        curs.execute(ts.tbl_incidents)
-        conn.commit()
-        conn.close()
+        # # Create the db
+        # conn = sqlite3.connect(db_path)
+        # curs = conn.cursor()
+        # # Create the tables
+        # curs.execute(ts.tbl_members)
+        # curs.execute(ts.tbl_injects)
+        # curs.execute(ts.tbl_incidents)
+        # conn.commit()
+        # conn.close()
 
-        conn = sqlite3.connect("general.db")
-        curs = conn.cursor()
+        conn, curs = open_database()
         # If we are creating an event, we need to make it active and
         # all others inactive
         curs.execute(ts.set_all_inactive)
@@ -62,16 +73,28 @@ def create_event(event_name):
 
     return True
 
+def member_join_event(discordUID, fName, eventName):
+    """Adds member to member table, otherwise updates their row in member table"""
+
+    conn, curs = open_database()
+    # Check if member in db
+    curs.execute(ts.sel_member, discordUID)
+    if curs.fetchone():
+        # Member in db, just update their current event
+        curs.execute(ts.upd_member_join, [eventName, discordUID])
+    else:
+        # Create new member with new event
+        curs.execute(ts.ins_new_member, [discordUID, fName, eventName])
+
+    conn.commit()
+    conn.close()
+    
+    
 
 
-# def open_database():
-#     """Open a connection to the database.
 
-#     Returns a cursor for the defined database."""
-#     co = sqlite3.connect('tutorial.db')
-#     cu = co.cursor()
 
-#     return co, cu
+
 
 
 # def close_database(cur, conn):
