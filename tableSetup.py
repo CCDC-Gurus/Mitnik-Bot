@@ -12,9 +12,8 @@ del_injects = """DROP TABLE injects;"""
 # categoryID: Discord id of the category associated with event
 tbl_events = """CREATE TABLE IF NOT EXISTS events(
     name varchar(255) NOT NULL,
-    eventPath varchar(255),
     active int,
-    categoryID varchar(255),
+    categoryID int,
     PRIMARY KEY(name)
 );
 """
@@ -67,9 +66,13 @@ tbl_injects = """CREATE TABLE IF NOT EXISTS injects(
 ins_event = """INSERT INTO events VALUES(?, ?, ?);"""
 
 # Sets all events in events table in general.db as inactive
-set_all_inactive = """UPDATE events SET active=0;"""
+upd_set_all_inactive = """UPDATE events SET active=0;"""
 
 # For users joining events/being created
-upd_member_join = """UPDATE members SET eventName=? WHERE discordUID=?;"""
+upd_member_join = """UPDATE members SET fName=?, eventName=? WHERE discordUID=?;"""
 sel_member = """SELECT fName FROM members WHERE discordUID=?;"""
-ins_new_member = """INSERT INTO members VALUES(?, ?, ?)"""
+ins_new_member = """INSERT INTO members VALUES(?, ?, ?);"""
+
+sel_current_event = """SELECT name FROM events WHERE active=1;"""
+sel_all_events = """SELECT name FROM events;"""
+sel_event_categ_id = """SELECT categoryID FROM events WHERE active=1;"""

@@ -52,8 +52,8 @@ if not(os.path.isdir("inc_tex")):
     os.mkdir("inc_tex")
 if not(os.path.isdir("inc_raw")):
     os.mkdir("inc_raw")
-if not(os.path.isdir("data")):
-    os.mkdir("data")
+# if not(os.path.isdir("data")):
+#     os.mkdir("data")
 
 # Create general info table
 dbm.create_general()
@@ -68,15 +68,21 @@ def tool_countIncidents():
         count += 1
     return count
 
-
 def injectChecker():
     """Check the inject db, alert team when """
     pass
 
 def re_validEventName(name):
     """Checks if event name is valid for sys"""
+    if len(name) > 255:
+        return False
     return re.search("^[A-Za-z0-9-]+$", name)
 
+def re_validFirstName(name):
+    """Checks if first name is valid"""
+    if len(name) > 255:
+        return False
+    return re.search("[A-Za-z-]+", name)
 
 # Runs on turn on
 @client.event
@@ -111,10 +117,11 @@ async def on_message(message):
     INCIDENT_TAGS = ["Number", "Img Path", "Attacker", "Target", "Found", "Vulnerability", "Response Taken", "Result"]
 
     EVENT_MSG = """Choose a flag:
--n [name]          create new event [name]
+-n [name]          create new event [name]. Use only letters, numbers and hyphens.
 -l                 list all events and their status
 -r [name]          resume an event [name]
--c                 show current event"""
+-c                 show current event
+-j [first-name]    Join the active event. Use only letters and hyphens."""
 
     # Debug stuff
     auth = str(message.author) # Author of this message
@@ -451,10 +458,18 @@ async def on_message(message):
                 if args[1] == '-L':
                     """ List events """
                     # TODO List all events with db files
-                    pass
+                    event_list = dbm.get_all_events()
+                    if event_list:
+                        await message.channel.send("Here is a list of events in the database: " + ", ".join(event_list))
+                    else:
+                        await message.channel.send("There are no events in the database.")
                 elif args[1] == '-C':
                     """ Show current event """
-                    # TODO Return the current event
+                    curr_event = dbm.get_current_event()
+                    if curr_event:
+                        await message.channel.send("The current event is: " + curr_event)
+                    else:
+                        await message.channel.send("There is no current event. You can create one with the -n flag, or resume one with -r.")
                 elif args[1] == '-N':
                     await message.channel.send("Must include the name of the event to create.")
                 elif args[1] == '-R':
@@ -465,44 +480,54 @@ async def on_message(message):
                     await message.channel.send("Invalid flag.")
             
             elif len(args) == 3:
-
                 if args[1] == '-N':
                     """ New event """
-                    if args[2]:
-                        # We have a new event to create
-                        # Create database with all the tables
-                        if re_validEventName(args[2]):
-                            # create dbs
-                            print("Creating dbs")
-                            dbm.create_event(args[2])
-                            # create category and channels
-                            print("Creating channels")
-                            categ = await message.guild.create_category(args[2])
-                            await categ.create_text_channel("general")
-                            await categ.create_text_channel("info")
-                            print("Done")
-                            await message.channel.send("Created new event: " + args[2])
-                        else:
-                            await message.channel.send("Invalid event name. Use only letters, numbers and dashes.")
+                    # We have a new event to create
+                    # Create database with all the tables
+                    if re_validEventName(args[2]):
+                        # create category and channels
+                        print("Creating channels")
+                        categ = await message.guild.create_category(args[2])
+                        await categ.create_text_channel("general")
+                        await categ.create_text_channel("info")
+                        # create dbs
+                        print("Creating dbs")
+                        dbm.create_event(args[2], categ.id)
+                        print("Done")
+                        await message.channel.send("Created new event: " + args[2] + ". This is now the active event.")
                     else:
-                        await message("Please provide a valid event name.")
+                        await message.channel.send("Invalid event name. Use only letters, numbers and dashes.")
 
                 elif args[1] == '-R':
                     """ Resume event """
-                    if args[2]:
-                        # Check to see if event exists, then join
-                        if re_validEventName(args[2]):
-                            pass
+                    # Check to see if event exists, then join
+                    if re_validEventName(args[2]):
+                        pass
                     
                 elif args[1] == '-J':
-                    if args[2]:
-                        # TODO fill in curreven
-                        dbm.member_join_event(message.author.id, args[2], currevent)
+                    """ Member join current event"""
+                    if re_validFirstName(args[2]):
+                        # Get the current event
+                        curr_event = dbm.get_current_event()
+                        if curr_event:
+                            # There is an event running, add them
+                            dbm.member_join_event(message.author.id, args[2], curr_event)
+                            # Add a text channel for this person to event category
+                            categID = dbm.get_current_event_categid()
+                            await discord.utils.get(message.guild.categories, id=categID).create_text_channel(args[2])
+                            await message.channel.send("Successfully joined event: " + curr_event)
+                        else:
+                            # There is no active event or db error
+                            await message.channel.send("There is no active event. Create or resume one first.")
+                    else:
+                        # The first name was invalid
+                        await message.channel.send("Your name was either too long or contained invalid characters. Keep it under 255 characters and only use letters and hyphens.")
+
                 else:
-                    await message.channel.send("Invalid flag.")
+                    await message.channel.send("Invalid use of command.")
 
             else:
-                await message.channel.send("Invalid use of command.")
+                await message.channel.send("Invalid number of arguments.")
 
 # Connect to discord and come online
 client.run(configs["secret"])

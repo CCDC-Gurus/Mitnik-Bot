@@ -37,7 +37,7 @@ def create_general():
     conn.close()
 
 
-def create_event(event_name):
+def create_event(event_name, categ_id):
     """Creates a new database file with all relevant tables.
     
     Returns whether or not the event was created
@@ -45,31 +45,15 @@ def create_event(event_name):
     Also adds new event to the events table in general.db
     """
     
-    db_path = os.path.join("data", str(event_name) + ".db")
+    #db_path = os.path.join("data", str(event_name) + ".db")
 
-    # Check to see if this event exist
-    # TODO Check general.db instead
-    if os.path.exists(db_path):
-        # TODO Load the event
-        pass
-    else:
-        # # Create the db
-        # conn = sqlite3.connect(db_path)
-        # curs = conn.cursor()
-        # # Create the tables
-        # curs.execute(ts.tbl_members)
-        # curs.execute(ts.tbl_injects)
-        # curs.execute(ts.tbl_incidents)
-        # conn.commit()
-        # conn.close()
-
-        conn, curs = open_database()
-        # If we are creating an event, we need to make it active and
-        # all others inactive
-        curs.execute(ts.set_all_inactive)
-        curs.execute(ts.ins_event, [event_name, db_path, 1])
-        conn.commit()
-        conn.close()
+    conn, curs = open_database()
+    # If we are creating an event, we need to make it active and
+    # all others inactive
+    curs.execute(ts.upd_set_all_inactive)
+    curs.execute(ts.ins_event, [event_name, 1, categ_id])
+    conn.commit()
+    conn.close()
 
     return True
 
@@ -78,10 +62,11 @@ def member_join_event(discordUID, fName, eventName):
 
     conn, curs = open_database()
     # Check if member in db
-    curs.execute(ts.sel_member, discordUID)
+    print(discordUID)
+    curs.execute(ts.sel_member, [discordUID])
     if curs.fetchone():
         # Member in db, just update their current event
-        curs.execute(ts.upd_member_join, [eventName, discordUID])
+        curs.execute(ts.upd_member_join, [fName, eventName, discordUID])
     else:
         # Create new member with new event
         curs.execute(ts.ins_new_member, [discordUID, fName, eventName])
@@ -89,10 +74,35 @@ def member_join_event(discordUID, fName, eventName):
     conn.commit()
     conn.close()
     
-    
+def get_current_event():
+    """Gets the current running event and returns a string. Empty if no current."""
+    conn, curs = open_database()
+    curs.execute(ts.sel_current_event)
+    name = curs.fetchone()
+    conn.close()
+    # name is a tuple, gotta make it a string
+    if name:
+        return name[0]
+    else:
+        return ""
 
+def get_all_events():
+    """Returns a list of all events in the database. Can be empty."""
+    conn, curs = open_database()
+    curs.execute(ts.sel_all_events)
+    events = curs.fetchall()
+    conn.close()
+    # events is a list of 1-tuples, gotta make it just a list
+    return [x[0] for x in events]
 
-
+def get_current_event_categid():
+    """Gets the current events category id."""
+    conn, curs = open_database()
+    curs.execute(ts.sel_event_categ_id)
+    cid = curs.fetchone()
+    conn.close()
+    # cid is a tuple, return the string
+    return cid[0]
 
 
 
