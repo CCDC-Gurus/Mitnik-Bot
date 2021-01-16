@@ -121,7 +121,8 @@ async def on_message(message):
 -l                 list all events and their status
 -r [name]          resume an event [name]
 -c                 show current event
--j [first-name]    Join the active event. Use only letters and hyphens."""
+-j [first-name]    Join the active event. Use only letters and hyphens.
+-d [name]          Delete the event [name]"""
 
     # Debug stuff
     auth = str(message.author) # Author of this message
@@ -457,7 +458,6 @@ async def on_message(message):
             elif len(args) == 2:
                 if args[1] == '-L':
                     """ List events """
-                    # TODO List all events with db files
                     event_list = dbm.get_all_events()
                     if event_list:
                         await message.channel.send("Here is a list of events in the database: " + ", ".join(event_list))
@@ -476,6 +476,8 @@ async def on_message(message):
                     await message.channel.send("Must include the name of the event to join.")
                 elif args[1] == '-J':
                     await message.channel.send("Must include your first name.")
+                elif args[1] == '-D':
+                    await message.channel.send("Must include the name of the event to delete.")
                 else:
                     await message.channel.send("Invalid flag.")
             
@@ -486,23 +488,29 @@ async def on_message(message):
                     # Create database with all the tables
                     if re_validEventName(args[2]):
                         # create category and channels
-                        print("Creating channels")
                         categ = await message.guild.create_category(args[2])
                         await categ.create_text_channel("general")
                         await categ.create_text_channel("info")
+                        await categ.create_voice_channel("chat")
                         # create dbs
-                        print("Creating dbs")
                         dbm.create_event(args[2], categ.id)
-                        print("Done")
                         await message.channel.send("Created new event: " + args[2] + ". This is now the active event.")
                     else:
                         await message.channel.send("Invalid event name. Use only letters, numbers and dashes.")
 
                 elif args[1] == '-R':
                     """ Resume event """
-                    # Check to see if event exists, then join
+                    # Check to see if event exists, then make it active
                     if re_validEventName(args[2]):
-                        pass
+                        event_list = dbm.get_all_events()
+                        if args[2] in event_list:
+                            # Set this event as active
+                            dbm.activate_event(args[2])
+                            await message.channel.send("Successfully activated event: " + args[2])
+                        else:
+                            await message.channel.send("This event does not exist. Either create it with the -n flag, or check your spelling. Case does not matter.")
+                    else:
+                        await message.channel.send("The event name was invalid. Event names can only include letters, numbers and hyphens.")
                     
                 elif args[1] == '-J':
                     """ Member join current event"""
@@ -522,6 +530,37 @@ async def on_message(message):
                     else:
                         # The first name was invalid
                         await message.channel.send("Your name was either too long or contained invalid characters. Keep it under 255 characters and only use letters and hyphens.")
+
+                elif args[1] == '-D':
+                    """ Delete an event from db and all associated categories/channels """
+                    if re_validEventName(args[2]):
+                        # Check if this is a valid event
+                        event_list = dbm.get_all_events()
+                        if args[2] in event_list:
+                            # Event name was valid, verify deletion
+                            await message.channel.send("Are you sure you want to delete " + args[2] + "? This will delete all text and voice channels. (y/n)")
+                            inp = await client.wait_for('message', check=pred)
+                            if inp.content.upper() == "Y":
+                                # Go for deletion
+                                # Get the category
+                                categID = dbm.get_event_categid(args[2])
+                                categ = discord.utils.get(message.guild.categories, id=categID)
+                                # Delete text and voice channels
+                                for channel in categ.text_channels:
+                                    await channel.delete()
+                                for vc in categ.voice_channels:
+                                    await vc.delete()
+                                # Delete the category
+                                await categ.delete()
+                                # Deactivate event and clear users from events in db
+                                dbm.event_deletion(args[2])
+                                await message.channel.send("Done!")
+                            else:
+                                await message.channel.send("Cancelling...")
+                        else:
+                            await message.channel.send("This event does not exist.")
+                    else:
+                        await message.channel.send("The event name was invalid. Event names can only include letters, numbers and hyphens.")
 
                 else:
                     await message.channel.send("Invalid use of command.")

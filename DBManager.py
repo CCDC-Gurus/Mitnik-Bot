@@ -57,12 +57,30 @@ def create_event(event_name, categ_id):
 
     return True
 
+def activate_event(event_name):
+    """Activates a different event.
+    
+    Need to set the other events as inactive.
+    """
+    conn, curs = open_database()
+    curs.execute(ts.upd_set_all_inactive)
+    curs.execute(ts.upd_activate_event, [event_name])
+    conn.commit()
+    conn.close()
+
+def event_deletion(event_name):
+    """Needs delete the event, and remove all users from the event if they are in it."""
+    conn, curs = open_database()
+    curs.execute(ts.del_event, [event_name])
+    curs.execute(ts.upd_remove_members_from_event, [event_name])
+    conn.commit()
+    conn.close()
+
 def member_join_event(discordUID, fName, eventName):
     """Adds member to member table, otherwise updates their row in member table"""
 
     conn, curs = open_database()
     # Check if member in db
-    print(discordUID)
     curs.execute(ts.sel_member, [discordUID])
     if curs.fetchone():
         # Member in db, just update their current event
@@ -95,10 +113,18 @@ def get_all_events():
     # events is a list of 1-tuples, gotta make it just a list
     return [x[0] for x in events]
 
+def get_event_categid(event_name):
+    """Gets the specifies events category id."""
+    conn, curs = open_database()
+    curs.execute(ts.sel_event_categ_id, [event_name])
+    cid = curs.fetchone()
+    conn.close()
+    return cid[0]
+
 def get_current_event_categid():
     """Gets the current events category id."""
     conn, curs = open_database()
-    curs.execute(ts.sel_event_categ_id)
+    curs.execute(ts.sel_curr_event_categ_id)
     cid = curs.fetchone()
     conn.close()
     # cid is a tuple, return the string

@@ -67,12 +67,17 @@ ins_event = """INSERT INTO events VALUES(?, ?, ?);"""
 
 # Sets all events in events table in general.db as inactive
 upd_set_all_inactive = """UPDATE events SET active=0;"""
+upd_activate_event = """UPDATE events SET active=1 WHERE name=?;"""
 
 # For users joining events/being created
 upd_member_join = """UPDATE members SET fName=?, eventName=? WHERE discordUID=?;"""
 sel_member = """SELECT fName FROM members WHERE discordUID=?;"""
 ins_new_member = """INSERT INTO members VALUES(?, ?, ?);"""
+upd_remove_members_from_event = """UPDATE members SET eventName='' WHERE eventName=?;"""
 
 sel_current_event = """SELECT name FROM events WHERE active=1;"""
 sel_all_events = """SELECT name FROM events;"""
-sel_event_categ_id = """SELECT categoryID FROM events WHERE active=1;"""
+sel_event_categ_id = """SELECT categoryID FROM events WHERE name=?;"""
+sel_curr_event_categ_id = """SELECT categoryID FROM events WHERE active=1;"""
+
+del_event = """DELETE FROM events WHERE name=?"""
